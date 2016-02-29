@@ -20,6 +20,16 @@ var ChatClass = function(customTpl){
     };
 };
 
+ChatClass.prototype.render = function(config){
+    if(config){
+        console.log(config);
+    }
+
+    chat.defaultRender('#chat-container');
+    chat.setTplListeners();
+    chat.setMessageListener();
+};
+
 ChatClass.prototype.$ = function(a){
     switch (a.charAt(0)){
         case '#':
@@ -124,3 +134,67 @@ ChatClass.prototype.setMessageListener = function(){
         }
     });
 };
+
+ChatClass.prototype.setTplListeners = function(){
+    var scope = this;
+
+    this.$('.message-input')[0].addEventListener('keypress', function(event) {
+        try {
+            if (event.keyCode == 13) {
+                scope.sendMessage('.message-input');
+            }
+        } catch (e) {
+            //..
+        }
+        return false;
+    });
+
+    this.$('.message-submit')[0].addEventListener('click', function() {
+        scope.sendMessage('.message-input');
+        return false;
+    });
+
+    this.$('.create-btn')[0].addEventListener('click', function() {
+        var roomName;
+
+        roomName = prompt("Room Name:", '');
+
+        if(roomName && roomName !== ''){
+            scope.socket.emit('createRoom', {
+                room: roomName
+            });
+        }
+        return false;
+    });
+
+    this.$('.leave-btn')[0].addEventListener('click', function() {
+        var roomsSelect = chat.$('.created-rooms'),
+            room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
+
+        if(room !== ''){
+            scope.socket.emit('leaveRoom', {
+                room: room,
+                user: chat.user
+            });
+        }
+        return false;
+    });
+
+    this.$('.enter-btn')[0].addEventListener('click', function() {
+        var user = prompt("User Name:", ''),
+            roomsSelect = chat.$('.created-rooms'),
+            room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
+
+        if(user && user !== '' && room !== ''){
+            scope.room = room;
+            scope.user = user;
+            scope.socket.emit('joinRoom', {
+                user: scope.user,
+                room: scope.room
+            });
+        }
+        return false;
+    });
+};
+
+var chat = new ChatClass({});
