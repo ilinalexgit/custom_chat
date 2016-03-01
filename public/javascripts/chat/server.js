@@ -1,5 +1,5 @@
 module.exports = function (app) {
-    var socket_io = require( "socket.io" );
+    var socket_io = require("socket.io");
     var time, rooms = [];
 
     app.io = socket_io();
@@ -32,17 +32,20 @@ module.exports = function (app) {
             app.io.to(data.room).emit('message', {
                 type: 'text-message',
                 message: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
+                system: true,
                 time: time
             });
         });
 
         socket.on('leaveRoom', function (data) {
             var time = new Date().getTime();
-            socket.leave(data.room, function(err){});
+            socket.leave(data.room, function (err) {
+            });
 
             app.io.emit('message', {
                 type: 'text-message',
                 message: 'user \'' + data.user + '\' disconnected from \'' + data.room + '\' room',
+                system: true,
                 time: time
             });
         });

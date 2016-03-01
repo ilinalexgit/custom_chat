@@ -1,9 +1,9 @@
-var ChatClass = function(){
+var ChatClass = function () {
     this.user = false;
     this.room = false;
 };
 
-ChatClass.prototype.init = function(selector, config){
+ChatClass.prototype.init = function (selector, config) {
     this.initSocket(config.socket);
     this.preRender(selector);
     this.setPanelListeners();
@@ -11,12 +11,12 @@ ChatClass.prototype.init = function(selector, config){
     this.confirmMessageSend(config.onSendSubmit);
 };
 
-ChatClass.prototype.initSocket = function(socket){
+ChatClass.prototype.initSocket = function (socket) {
     this.socket = io.connect(socket);
 };
 
-ChatClass.prototype.$ = function(a){
-    switch (a.charAt(0)){
+ChatClass.prototype.$ = function (a) {
+    switch (a.charAt(0)) {
         case '#':
             return document.getElementById(a.substring(1));
             break;
@@ -29,40 +29,55 @@ ChatClass.prototype.$ = function(a){
     }
 };
 
-ChatClass.prototype.preRender = function(selector){
+ChatClass.prototype.preRender = function (selector) {
     var container = this.$(selector);
 
     container.className = 'chat-container';
     console.log(container);
 };
 
-ChatClass.prototype.vrapDate = function(date){
+ChatClass.prototype.vrapDate = function (date) {
     var dateObj;
 
     dateObj = new Date(date);
-    /*return dateObj.getDay() + 1 + '-' + dateObj.getDate() + '-' + dateObj.getFullYear() +
-        ' ' + dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();*/
-    return dateObj.toUTCString();
+    return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
+    //return dateObj.toUTCString();
 };
 
-ChatClass.prototype.prepareMessage = function(data){
-    var date, node, textnode;
+ChatClass.prototype.prepareMessage = function (data) {
+    var date, node, messageTextnode, userSpan,
+        saysSpan, timeSpan, timeTextnode, name, nameTextnode;
+
+    name = data.name || 'bot:';
 
     date = this.vrapDate(data.time);
     node = document.createElement("li");
-    textnode = document.createTextNode(date + ' - ' + data.message);
+    userSpan = document.createElement("span");
+    saysSpan = document.createElement("span");
+    timeSpan = document.createElement("span");
+    messageTextnode = document.createTextNode(data.message);
+    timeTextnode = document.createTextNode(date);
+    nameTextnode = document.createTextNode(name);
+    userSpan.className = 'username';
+    saysSpan.className = 'says';
+    timeSpan.className = 'time';
+    userSpan.appendChild(nameTextnode);
+    saysSpan.appendChild(messageTextnode);
+    timeSpan.appendChild(timeTextnode);
     node.className = 'msg';
-    node.appendChild(textnode);
+    node.appendChild(timeSpan);
+    node.appendChild(userSpan);
+    node.appendChild(saysSpan);
 
     return node;
 };
 
-ChatClass.prototype.sendMessage = function(selector){
+ChatClass.prototype.sendMessage = function (selector) {
     var input;
 
     input = this.$(selector);
 
-    if(input[0].value !== ''){
+    if (input[0].value !== '') {
         this.socket.emit('client-message', {
             type: 'client-message',
             message: input[0].value,
@@ -71,26 +86,26 @@ ChatClass.prototype.sendMessage = function(selector){
     }
 };
 
-ChatClass.prototype.confirmMessageSend = function(callback){
+ChatClass.prototype.confirmMessageSend = function (callback) {
     var scope;
 
     scope = this;
 
-    this.$('.message-submit')[0].addEventListener('click', function() {
+    this.$('.message-submit')[0].addEventListener('click', function () {
         scope.sendMessage('.message-input');
 
-        if(callback){
+        if (callback) {
             callback();
         }
         return false;
     });
 
-    this.$('.message-input')[0].addEventListener('keypress', function(event) {
+    this.$('.message-input')[0].addEventListener('keypress', function (event) {
         try {
             if (event.keyCode == 13) {
                 scope.sendMessage('.message-input');
 
-                if(callback){
+                if (callback) {
                     callback();
                 }
             }
@@ -101,7 +116,7 @@ ChatClass.prototype.confirmMessageSend = function(callback){
     });
 };
 
-ChatClass.prototype.setMessageListener = function(config){
+ChatClass.prototype.setMessageListener = function (config) {
     var scope = this;
 
     this.socket.on('message', function (data) {
@@ -113,6 +128,7 @@ ChatClass.prototype.setMessageListener = function(config){
             case 'text-message':
                 node = scope.prepareMessage(data);
                 mesContainer[0].children[0].appendChild(node);
+                data.el = node;
 
                 config.onMessageReceive(data);
 
@@ -120,10 +136,10 @@ ChatClass.prototype.setMessageListener = function(config){
             case 'update-rooms':
                 roomsSelect = scope.$('.created-rooms');
 
-                if(data.rooms !== 'default'){
+                if (data.rooms !== 'default') {
                     roomsSelect[0].innerHTML = '';
                     var i = 0, length = data.rooms.length;
-                    for(i = 0; i < length; i++){
+                    for (i = 0; i < length; i++) {
                         node = document.createElement("option");
                         textnode = document.createTextNode(data.rooms[i]);
                         node.setAttribute("value", data.rooms[i]);
@@ -132,11 +148,11 @@ ChatClass.prototype.setMessageListener = function(config){
                         roomsSelect[0].appendChild(node);
                     }
 
-                    if(data.message !== ''){
+                    if (data.message !== '') {
                         node = scope.prepareMessage(data);
                         mesContainer[0].children[0].appendChild(node);
                     }
-                }else{
+                } else {
                     roomsSelect[0].innerHTML =
                         '<option value="" disabled selected>no rooms available</option>';
                 }
@@ -144,21 +160,21 @@ ChatClass.prototype.setMessageListener = function(config){
             case 'server-authorize':
                 break;
             default:
-                console.log ('unknown type:', data.type);
+                console.log('unknown type:', data.type);
                 break;
         }
     });
 };
 
-ChatClass.prototype.setPanelListeners = function(){
+ChatClass.prototype.setPanelListeners = function () {
     var scope = this;
 
-    this.$('.create-btn')[0].addEventListener('click', function() {
+    this.$('.create-btn')[0].addEventListener('click', function () {
         var roomName;
 
         roomName = prompt("Room Name:", '');
 
-        if(roomName && roomName !== ''){
+        if (roomName && roomName !== '') {
             scope.socket.emit('createRoom', {
                 room: roomName
             });
@@ -166,11 +182,11 @@ ChatClass.prototype.setPanelListeners = function(){
         return false;
     });
 
-    this.$('.leave-btn')[0].addEventListener('click', function() {
+    this.$('.leave-btn')[0].addEventListener('click', function () {
         var roomsSelect = scope.$('.created-rooms'),
             room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
 
-        if(room !== ''){
+        if (room !== '') {
             scope.socket.emit('leaveRoom', {
                 room: room,
                 user: this.user
@@ -179,12 +195,12 @@ ChatClass.prototype.setPanelListeners = function(){
         return false;
     });
 
-    this.$('.enter-btn')[0].addEventListener('click', function() {
+    this.$('.enter-btn')[0].addEventListener('click', function () {
         var user = prompt("User Name:", ''),
             roomsSelect = scope.$('.created-rooms'),
             room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
 
-        if(user && user !== '' && room !== ''){
+        if (user && user !== '' && room !== '') {
             scope.room = room;
             scope.user = user;
             scope.socket.emit('joinRoom', {
