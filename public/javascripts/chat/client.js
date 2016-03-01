@@ -1,17 +1,18 @@
 var ChatClass = function(){
-    this.socket = io.connect('http://igor.dnet:3000');
     this.user = false;
     this.room = false;
 };
 
 ChatClass.prototype.init = function(selector, config){
-    if(config){
-        console.log(config);
-    }
+    this.initSocket(config.socket);
+    this.preRender(selector);
+    this.setPanelListeners();
+    this.setMessageListener(config);
+    this.confirmMessageSend(config.onSendSubmit);
+};
 
-    chat.preRender(selector);
-    chat.setTplListeners();
-    chat.setMessageListener();
+ChatClass.prototype.initSocket = function(socket){
+    this.socket = io.connect(socket);
 };
 
 ChatClass.prototype.$ = function(a){
@@ -29,7 +30,7 @@ ChatClass.prototype.$ = function(a){
 };
 
 ChatClass.prototype.preRender = function(selector){
-    var container = chat.$(selector);
+    var container = this.$(selector);
 
     container.className = 'chat-container';
     console.log(container);
@@ -59,35 +60,65 @@ ChatClass.prototype.prepareMessage = function(data){
 ChatClass.prototype.sendMessage = function(selector){
     var input;
 
-    input = chat.$(selector);
+    input = this.$(selector);
 
     if(input[0].value !== ''){
-        chat.socket.emit('client-message', {
+        this.socket.emit('client-message', {
             type: 'client-message',
             message: input[0].value,
-            room: chat.room
+            room: this.room
         });
-
-        input[0].value = '';
     }
 };
 
-ChatClass.prototype.setMessageListener = function(){
+ChatClass.prototype.confirmMessageSend = function(callback){
+    var scope;
+
+    scope = this;
+
+    this.$('.message-submit')[0].addEventListener('click', function() {
+        scope.sendMessage('.message-input');
+
+        if(callback){
+            callback();
+        }
+        return false;
+    });
+
+    this.$('.message-input')[0].addEventListener('keypress', function(event) {
+        try {
+            if (event.keyCode == 13) {
+                scope.sendMessage('.message-input');
+
+                if(callback){
+                    callback();
+                }
+            }
+        } catch (e) {
+            //..
+        }
+        return false;
+    });
+};
+
+ChatClass.prototype.setMessageListener = function(config){
     var scope = this;
 
     this.socket.on('message', function (data) {
         var node, mesContainer, roomsSelect, textnode;
 
-        mesContainer = chat.$('.messages-container');
+        mesContainer = scope.$('.messages-container');
 
         switch (data.type) {
-            case 'server-message':
+            case 'text-message':
                 node = scope.prepareMessage(data);
                 mesContainer[0].children[0].appendChild(node);
 
+                config.onMessageReceive(data);
+
                 break;
             case 'update-rooms':
-                roomsSelect = chat.$('.created-rooms');
+                roomsSelect = scope.$('.created-rooms');
 
                 if(data.rooms !== 'default'){
                     roomsSelect[0].innerHTML = '';
@@ -119,24 +150,8 @@ ChatClass.prototype.setMessageListener = function(){
     });
 };
 
-ChatClass.prototype.setTplListeners = function(){
+ChatClass.prototype.setPanelListeners = function(){
     var scope = this;
-
-    this.$('.message-input')[0].addEventListener('keypress', function(event) {
-        try {
-            if (event.keyCode == 13) {
-                scope.sendMessage('.message-input');
-            }
-        } catch (e) {
-            //..
-        }
-        return false;
-    });
-
-    this.$('.message-submit')[0].addEventListener('click', function() {
-        scope.sendMessage('.message-input');
-        return false;
-    });
 
     this.$('.create-btn')[0].addEventListener('click', function() {
         var roomName;
@@ -152,13 +167,13 @@ ChatClass.prototype.setTplListeners = function(){
     });
 
     this.$('.leave-btn')[0].addEventListener('click', function() {
-        var roomsSelect = chat.$('.created-rooms'),
+        var roomsSelect = scope.$('.created-rooms'),
             room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
 
         if(room !== ''){
             scope.socket.emit('leaveRoom', {
                 room: room,
-                user: chat.user
+                user: this.user
             });
         }
         return false;
@@ -166,7 +181,7 @@ ChatClass.prototype.setTplListeners = function(){
 
     this.$('.enter-btn')[0].addEventListener('click', function() {
         var user = prompt("User Name:", ''),
-            roomsSelect = chat.$('.created-rooms'),
+            roomsSelect = scope.$('.created-rooms'),
             room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
 
         if(user && user !== '' && room !== ''){

@@ -26,7 +26,7 @@ module.exports = function (io) {
             time = new Date().getTime();
 
             io.to(data.room).emit('message', {
-                type: 'server-message',
+                type: 'text-message',
                 message: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
                 time: time
             });
@@ -37,7 +37,7 @@ module.exports = function (io) {
             socket.leave(data.room, function(err){});
 
             io.emit('message', {
-                type: 'server-message',
+                type: 'text-message',
                 message: 'user \'' + data.user + '\' disconnected from \'' + data.room + '\' room',
                 time: time
             });
@@ -47,7 +47,7 @@ module.exports = function (io) {
             time = new Date().getTime();
 
             io.sockets.in(data.room).emit('message', {
-                type: 'server-message',
+                type: 'text-message',
                 message: data.message,
                 time: time
             });
