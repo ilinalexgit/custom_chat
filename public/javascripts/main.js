@@ -1,7 +1,7 @@
 chat.init(
     '#chat1',
     {
-        socket: 'http://igor.dnet:3000',
+        socket: 'http://localhost:3000',
         onSendSubmit: function(){
             var input;
 

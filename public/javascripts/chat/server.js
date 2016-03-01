@@ -1,6 +1,10 @@
-module.exports = function (io) {
+module.exports = function (app) {
+    var socket_io = require( "socket.io" );
     var time, rooms = [];
-    io.sockets.on('connection', function (socket) {
+
+    app.io = socket_io();
+
+    app.io.sockets.on('connection', function (socket) {
         time = new Date().getTime();
 
         socket.emit('message', {
@@ -13,7 +17,7 @@ module.exports = function (io) {
         socket.on('createRoom', function (data) {
             rooms.push(data.room);
 
-            io.emit('message', {
+            app.io.emit('message', {
                 type: 'update-rooms',
                 message: 'new room \'' + data.room + '\' created',
                 rooms: rooms,
@@ -25,7 +29,7 @@ module.exports = function (io) {
             socket.join(data.room);
             time = new Date().getTime();
 
-            io.to(data.room).emit('message', {
+            app.io.to(data.room).emit('message', {
                 type: 'text-message',
                 message: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
                 time: time
@@ -36,7 +40,7 @@ module.exports = function (io) {
             var time = new Date().getTime();
             socket.leave(data.room, function(err){});
 
-            io.emit('message', {
+            app.io.emit('message', {
                 type: 'text-message',
                 message: 'user \'' + data.user + '\' disconnected from \'' + data.room + '\' room',
                 time: time
@@ -46,7 +50,7 @@ module.exports = function (io) {
         socket.on('client-message', function (data) {
             time = new Date().getTime();
 
-            io.sockets.in(data.room).emit('message', {
+            app.io.sockets.in(data.room).emit('message', {
                 type: 'text-message',
                 message: data.message,
                 time: time

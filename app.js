@@ -1,5 +1,4 @@
 var express = require('express');
-var socket_io = require( "socket.io" );
 var path = require('path');
 //var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -11,8 +10,6 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
-var io = socket_io();
-app.io = io;
 
 // view engine setup
 app.engine('html', swig.renderFile);
@@ -31,6 +28,7 @@ app.use(cookieParser());
 app.use(require('less-middleware')(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/node_modules', express.static(path.join(__dirname, '/node_modules')));
+require(path.join(__dirname, 'public/javascripts/chat/server.js'))(app);
 
 app.all('*', function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -40,7 +38,6 @@ app.all('*', function(req, res, next) {
 
 app.use('/', routes);
 app.use('/users', users);
-require('./routes/io')(io);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
