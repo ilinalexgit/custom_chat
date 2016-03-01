@@ -1,31 +1,15 @@
-var ChatClass = function(customTpl){
+var ChatClass = function(){
     this.socket = io.connect('http://igor.dnet:3000');
     this.user = false;
     this.room = false;
-    this.templates = {
-        panelTpl: (!customTpl.panelTpl) ?
-            '<div class="panel">' +
-                '<button type="button" class="create-btn">create room</button>' +
-                '<select class="created-rooms"></select>' +
-                '<button type="button" class="enter-btn">enter chat</button>' +
-                '<button type="button" class="leave-btn">leave chat</button>' +
-            '</div>' : customTpl.panelTpl,
-        messagesContainerTpl: (!customTpl.messagesContainerTpl) ?
-            '<ul class=\'messages-container\'></ul>' : customTpl.messagesContainerTpl,
-        inputFieldTpl: (!customTpl.inputFieldTpl) ?
-            '<div class="input-container">' +
-                '<input type="text" class="message-input">' +
-                '<button type="button" class="message-submit">send</button>' +
-            '</div>' : customTpl.inputFieldTpl
-    };
 };
 
-ChatClass.prototype.render = function(config){
+ChatClass.prototype.init = function(selector, config){
     if(config){
         console.log(config);
     }
 
-    chat.defaultRender('#chat-container');
+    chat.preRender(selector);
     chat.setTplListeners();
     chat.setMessageListener();
 };
@@ -44,12 +28,11 @@ ChatClass.prototype.$ = function(a){
     }
 };
 
-ChatClass.prototype.defaultRender = function(selector){
+ChatClass.prototype.preRender = function(selector){
     var container = chat.$(selector);
 
-    container.insertAdjacentHTML('beforeend', chat.templates.messagesContainerTpl);
-    container.insertAdjacentHTML('beforeend', chat.templates.inputFieldTpl);
-    container.insertAdjacentHTML('afterBegin', chat.templates.panelTpl);
+    container.className = 'chat-container';
+    console.log(container);
 };
 
 ChatClass.prototype.vrapDate = function(date){
@@ -67,11 +50,11 @@ ChatClass.prototype.prepareMessage = function(data){
     date = this.vrapDate(data.time);
     node = document.createElement("li");
     textnode = document.createTextNode(date + ' - ' + data.message);
+    node.className = 'msg';
     node.appendChild(textnode);
 
     return node;
 };
-
 
 ChatClass.prototype.sendMessage = function(selector){
     var input;
@@ -100,7 +83,7 @@ ChatClass.prototype.setMessageListener = function(){
         switch (data.type) {
             case 'server-message':
                 node = scope.prepareMessage(data);
-                mesContainer[0].appendChild(node);
+                mesContainer[0].children[0].appendChild(node);
 
                 break;
             case 'update-rooms':
@@ -113,13 +96,14 @@ ChatClass.prototype.setMessageListener = function(){
                         node = document.createElement("option");
                         textnode = document.createTextNode(data.rooms[i]);
                         node.setAttribute("value", data.rooms[i]);
+                        node.className = 'msg';
                         node.appendChild(textnode);
                         roomsSelect[0].appendChild(node);
                     }
 
                     if(data.message !== ''){
                         node = scope.prepareMessage(data);
-                        mesContainer[0].appendChild(node);
+                        mesContainer[0].children[0].appendChild(node);
                     }
                 }else{
                     roomsSelect[0].innerHTML =
@@ -197,4 +181,4 @@ ChatClass.prototype.setTplListeners = function(){
     });
 };
 
-var chat = new ChatClass({});
+var chat = new ChatClass();
