@@ -8,13 +8,12 @@ chat.init(
             input[0].value = '';
         },
         onMessageReceive: function(data){
-            console.log('onMessageReceive', data);
             if(!data.system){
                 data.el.insertAdjacentHTML('beforeend',
                     '<span class="msg-actions">' +
-                        '<a href="#" class="edit-msg">Edit</a>' +
-                        '&nbsp<a href="#" class="delete-msg">Delete</a>' +
-                        '</span>'
+                        '<a href="#" class="edit-msg">Edit</a>&nbsp' +
+                        '<a href="#" class="delete-msg">Delete</a>' +
+                    '</span>'
                 );
             }
         }

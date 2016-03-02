@@ -1,6 +1,10 @@
 module.exports = function (app) {
     var socket_io = require("socket.io");
+    var lib = require("./lib");
     var time, rooms = [];
+
+    console.log(lib.chat.toString());
+    console.log(lib.user.toString());
 
     app.io = socket_io();
 
