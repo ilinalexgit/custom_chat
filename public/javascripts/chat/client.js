@@ -31,12 +31,10 @@ ChatClass.prototype.$ = function (a) {
 
 ChatClass.prototype.preRender = function (selector) {
     var container = this.$(selector);
-
     container.className = 'chat-container';
-    console.log(container);
 };
 
-ChatClass.prototype.vrapDate = function (date) {
+ChatClass.prototype.wrapDate = function (date) {
     var dateObj;
 
     dateObj = new Date(date);
@@ -48,9 +46,9 @@ ChatClass.prototype.prepareMessage = function (data) {
     var date, node, messageTextnode, userSpan,
         saysSpan, timeSpan, timeTextnode, name, nameTextnode;
 
-    name = data.name || 'bot:';
+    name = (data.user && data.user.name) ? data.user.name + ':' : 'bot:';
 
-    date = this.vrapDate(data.time);
+    date = this.wrapDate(data.time);
     node = document.createElement("li");
     userSpan = document.createElement("span");
     saysSpan = document.createElement("span");
@@ -82,7 +80,7 @@ ChatClass.prototype.sendMessage = function (selector) {
             type: 'client-message',
             message: input[0].value,
             room: this.room,
-            user: localStorage.getItem('user-id')
+            user_id: localStorage.getItem('user-id')
         });
     }
 };
@@ -134,14 +132,11 @@ ChatClass.prototype.setMessageListener = function (config) {
                 config.onMessageReceive(response);
 
                 break;
-            case 'system-message':
-                node = scope.prepareMessage(response);
-                mesContainer[0].children[0].appendChild(node);
-                response.el = node;
-
+            case 'system-data':
                 switch (response.action) {
                     case 'join-room':
                         localStorage.setItem('user-id', response.data.id);
+                        scope.user = response.data;
                         break;
                     case 'leave-room':
                         localStorage.removeItem('user-id');
@@ -149,6 +144,12 @@ ChatClass.prototype.setMessageListener = function (config) {
                     default:
                         break;
                 }
+
+                break;
+            case 'system-message':
+                node = scope.prepareMessage(response);
+                mesContainer[0].children[0].appendChild(node);
+                response.el = node;
 
                 config.onMessageReceive(response);
 
@@ -206,10 +207,10 @@ ChatClass.prototype.setPanelListeners = function () {
         var roomsSelect = scope.$('.created-rooms'),
             room = roomsSelect[0].options[roomsSelect[0].selectedIndex].value;
 
-        if (room !== '') {
+        if (room !== '' && localStorage.getItem('user-id')) {
             scope.socket.emit('leaveRoom', {
                 room: room,
-                user: this.user
+                user: scope.user
             });
         }
         return false;
@@ -222,9 +223,8 @@ ChatClass.prototype.setPanelListeners = function () {
 
         if (user && user !== '' && room !== '') {
             scope.room = room;
-            scope.user = user;
             scope.socket.emit('joinRoom', {
-                user: scope.user,
+                user: user,
                 room: scope.room
             });
         }

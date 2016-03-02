@@ -1,7 +1,5 @@
 var User = function(){
-    this.id = null;
-    this.status = 'active';
-    this.name = 'default';
+    this.users = [];
 };
 
 User.prototype.loginUser = function() {
@@ -14,17 +12,52 @@ User.prototype.logoutUser = function() {
 
 User.prototype.signinUser = function(data) {
     if(data.name && data.name !== ''){
-        this.name = data.name;
-        this.id = this.setId();
+        return {
+            name: data.name,
+            id: this.setId()
+        };
     }
 };
 
-User.prototype.serializeUser = function(data) {
-    //..
+User.prototype.removeUser = function(token) {
+    var i, length, removedName;
+
+    i = 0;
+    length = this.users.length;
+
+    for(i; i<length; i++){
+        if(this.users[i].id === token){
+            removedName = this.users[i];
+            this.users.splice( i, 1 );
+            return removedName;
+        }
+    }
+
+    return false;
 };
 
-User.prototype.deserializeUser = function(data) {
-    //..
+User.prototype.serializeUser = function(data) {
+    this.users.push(data);
+    return data.id;
+};
+
+User.prototype.deserializeUser = function(token) {
+    var i, length;
+
+    i = 0;
+    length = this.users.length;
+
+    for(i; i<length; i++){
+        if(this.users[i].id === token) {
+            return this.users[i];
+        }
+    }
+
+    return false;
+};
+
+User.prototype.getActiveUsers = function() {
+    return this.users;
 };
 
 User.prototype.setId = function() {
@@ -35,11 +68,8 @@ User.prototype.getRole = function() {
     //..
 };
 
-User.prototype.getMeta = function() {
-    return {
-        name: this.name,
-        id: this.id
-    };
+User.prototype.getMeta = function(id) {
+    return id;
 };
 
 User.prototype.setStatus = function() {

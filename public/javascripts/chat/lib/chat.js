@@ -27,7 +27,7 @@ Chat.prototype.updateRoomsList = function(action, room) {
     }
 };
 
-Chat.prototype.getActiveChats = function() {
+Chat.prototype.getActiveRooms = function() {
     return this.rooms;
 };
 

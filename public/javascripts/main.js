@@ -8,8 +8,6 @@ chat.init(
             input[0].value = '';
         },
         onMessageReceive: function(data){
-            console.log(data);
-
             if(data.type !== 'system-message'){
                 data.el.insertAdjacentHTML('beforeend',
                     '<span class="msg-actions">' +
@@ -21,5 +19,3 @@ chat.init(
         }
     }
 );
-
-console.log(chat);
