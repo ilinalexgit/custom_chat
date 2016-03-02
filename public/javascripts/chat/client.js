@@ -81,7 +81,8 @@ ChatClass.prototype.sendMessage = function (selector) {
         this.socket.emit('client-message', {
             type: 'client-message',
             message: input[0].value,
-            room: this.room
+            room: this.room,
+            user: localStorage.getItem('user-id')
         });
     }
 };
@@ -119,37 +120,56 @@ ChatClass.prototype.confirmMessageSend = function (callback) {
 ChatClass.prototype.setMessageListener = function (config) {
     var scope = this;
 
-    this.socket.on('message', function (data) {
+    this.socket.on('message', function (response) {
         var node, mesContainer, roomsSelect, textnode;
 
         mesContainer = scope.$('.messages-container');
 
-        switch (data.type) {
+        switch (response.type) {
             case 'text-message':
-                node = scope.prepareMessage(data);
+                node = scope.prepareMessage(response);
                 mesContainer[0].children[0].appendChild(node);
-                data.el = node;
+                response.el = node;
 
-                config.onMessageReceive(data);
+                config.onMessageReceive(response);
+
+                break;
+            case 'system-message':
+                node = scope.prepareMessage(response);
+                mesContainer[0].children[0].appendChild(node);
+                response.el = node;
+
+                switch (response.action) {
+                    case 'join-room':
+                        localStorage.setItem('user-id', response.data.id);
+                        break;
+                    case 'leave-room':
+                        localStorage.removeItem('user-id');
+                        break;
+                    default:
+                        break;
+                }
+
+                config.onMessageReceive(response);
 
                 break;
             case 'update-rooms':
                 roomsSelect = scope.$('.created-rooms');
 
-                if (data.rooms !== 'default') {
+                if (response.rooms !== 'default') {
                     roomsSelect[0].innerHTML = '';
-                    var i = 0, length = data.rooms.length;
+                    var i = 0, length = response.rooms.length;
                     for (i = 0; i < length; i++) {
                         node = document.createElement("option");
-                        textnode = document.createTextNode(data.rooms[i]);
-                        node.setAttribute("value", data.rooms[i]);
+                        textnode = document.createTextNode(response.rooms[i]);
+                        node.setAttribute("value", response.rooms[i]);
                         node.className = 'msg';
                         node.appendChild(textnode);
                         roomsSelect[0].appendChild(node);
                     }
 
-                    if (data.message !== '') {
-                        node = scope.prepareMessage(data);
+                    if (response.message !== '') {
+                        node = scope.prepareMessage(response);
                         mesContainer[0].children[0].appendChild(node);
                     }
                 } else {
@@ -160,7 +180,7 @@ ChatClass.prototype.setMessageListener = function (config) {
             case 'server-authorize':
                 break;
             default:
-                console.log('unknown type:', data.type);
+                console.log('unknown type:', response.type);
                 break;
         }
     });

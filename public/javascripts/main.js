@@ -8,7 +8,9 @@ chat.init(
             input[0].value = '';
         },
         onMessageReceive: function(data){
-            if(!data.system){
+            console.log(data);
+
+            if(data.type !== 'system-message'){
                 data.el.insertAdjacentHTML('beforeend',
                     '<span class="msg-actions">' +
                         '<a href="#" class="edit-msg">Edit</a>&nbsp' +

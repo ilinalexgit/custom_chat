@@ -1,2 +1,2 @@
-exports.chat = require('./chat');
-exports.user = require('./user');
+exports.Chat = require('./chat');
+exports.User = require('./user');

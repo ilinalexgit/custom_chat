@@ -1,4 +1,5 @@
 var Chat = function(){
+    this.rooms = [];
 };
 
 Chat.prototype.addUserToChat = function() {
@@ -13,8 +14,21 @@ Chat.prototype.canAccess = function() {
     //..
 };
 
+Chat.prototype.updateRoomsList = function(action, room) {
+    switch (action) {
+        case 'add-room':
+            this.rooms.push(room);
+            break;
+        case 'remove-room':
+            //..
+            break;
+        default:
+            break;
+    }
+};
+
 Chat.prototype.getActiveChats = function() {
-    //..
+    return this.rooms;
 };
 
 Chat.prototype.createChat = function() {

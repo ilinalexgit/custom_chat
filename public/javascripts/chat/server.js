@@ -1,12 +1,13 @@
 module.exports = function (app) {
-    var socket_io = require("socket.io");
-    var lib = require("./lib");
-    var time, rooms = [];
+    var socket_io, lib, time, rooms, users, chat;
 
-    console.log(lib.chat.toString());
-    console.log(lib.user.toString());
+    socket_io = require("socket.io");
+    lib = require("./lib");
+    users = [];
 
     app.io = socket_io();
+    chat = new lib.Chat();
+    rooms = chat.getActiveChats();
 
     app.io.sockets.on('connection', function (socket) {
         time = new Date().getTime();
@@ -19,12 +20,13 @@ module.exports = function (app) {
         });
 
         socket.on('createRoom', function (data) {
-            rooms.push(data.room);
+            chat.updateRoomsList('add-room', data.room);
+            console.log(chat.getActiveChats());
 
             app.io.emit('message', {
                 type: 'update-rooms',
                 message: 'new room \'' + data.room + '\' created',
-                rooms: rooms,
+                rooms: chat.getActiveChats(),
                 time: time
             });
         });
@@ -33,10 +35,21 @@ module.exports = function (app) {
             socket.join(data.room);
             time = new Date().getTime();
 
+            if(data.user && data.user !== ''){
+                var user = new lib.User;
+                user.signinUser({
+                    name: data.user
+                });
+
+                users.push(user.getMeta());
+                console.log(users);
+            }
+
             app.io.to(data.room).emit('message', {
-                type: 'text-message',
+                type: 'system-message',
+                action: 'join-room',
                 message: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
-                system: true,
+                data: user.getMeta(),
                 time: time
             });
         });
@@ -47,15 +60,17 @@ module.exports = function (app) {
             });
 
             app.io.emit('message', {
-                type: 'text-message',
+                type: 'system-message',
+                action: 'leave-room',
                 message: 'user \'' + data.user + '\' disconnected from \'' + data.room + '\' room',
-                system: true,
                 time: time
             });
         });
 
         socket.on('client-message', function (data) {
             time = new Date().getTime();
+            
+            console.log(data);
 
             app.io.sockets.in(data.room).emit('message', {
                 type: 'text-message',
