@@ -69,11 +69,11 @@ User.prototype.getRole = function() {
 };
 
 User.prototype.getMeta = function(id) {
-    return id;
+    //..
 };
 
 User.prototype.setStatus = function() {
-    return this.status;
+    //..
 };
 
 User.prototype.getUserChats = function() {

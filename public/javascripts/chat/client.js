@@ -5,7 +5,7 @@ var ChatClass = function () {
 
 ChatClass.prototype.init = function (selector, config) {
     this.initSocket(config.socket);
-    this.preRender(selector);
+    this.render(selector);
     this.setPanelListeners();
     this.setMessageListener(config);
     this.confirmMessageSend(config.onSendSubmit);
@@ -29,8 +29,9 @@ ChatClass.prototype.$ = function (a) {
     }
 };
 
-ChatClass.prototype.preRender = function (selector) {
+ChatClass.prototype.render = function (selector) {
     var container = this.$(selector);
+    container.innerHTML = tpl({extensions: false});
     container.className = 'chat-container';
 };
 
