@@ -1,5 +1,6 @@
-var Chat = function(){
+var Chat = function(swig){
     this.rooms = [];
+    this.swig = swig;
 };
 
 Chat.prototype.addUserToChat = function() {
@@ -41,6 +42,28 @@ Chat.prototype.deleteChat = function() {
 
 Chat.prototype.broadcastMessage = function() {
     //..
+};
+
+Chat.prototype.wrapDate = function (date) {
+    var dateObj;
+
+    dateObj = new Date(date);
+    return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
+};
+
+Chat.prototype.prepareMessage = function(config) {
+    var messageLayout, date;
+
+    date = this.wrapDate(config.time);
+
+    messageLayout = this.swig.renderFile('public/javascripts/chat/themes/default/includes/message.html', {
+        time: date,
+        username: config.user.name,
+        says: config.text
+
+    });
+
+    return messageLayout;
 };
 
 Chat.prototype.loadHistory = function() {

@@ -1,16 +1,25 @@
 module.exports = function (app) {
-    var socket_io, lib, time, rooms, chat, user;
+    var socket_io, lib, time, rooms, chat, user, layout, swig;
+    swig = require('swig');
 
     socket_io = require("socket.io");
     lib = require("./lib");
+    layout = swig.renderFile('public/javascripts/chat/themes/default/index.html', {});
 
     app.io = socket_io();
-    chat = new lib.Chat();
+    chat = new lib.Chat(swig);
     user = new lib.User();
     rooms = chat.getActiveRooms();
 
     app.io.sockets.on('connection', function (socket) {
         time = new Date().getTime();
+
+        socket.emit('message', {
+            type: 'system-data',
+            action: 'send-layout',
+            data: {layout: layout},
+            time: time
+        });
 
         socket.emit('message', {
             type: 'update-rooms',
@@ -41,7 +50,7 @@ module.exports = function (app) {
             }
 
             socket.emit('message', {
-                type: 'private-data',
+                type: 'system-data',
                 action: 'join-room',
                 data: {id: id},
                 time: time
@@ -77,11 +86,18 @@ module.exports = function (app) {
         });
 
         socket.on('client-message', function (data) {
+            var message;
             time = new Date().getTime();
+
+            message = chat.prepareMessage({
+                text: data.message,
+                user: user.deserializeUser(data.user_id),
+                time: time
+            });
 
             app.io.sockets.in(data.room).emit('message', {
                 type: 'text-message',
-                message: data.message,
+                message: message,
                 user: user.deserializeUser(data.user_id),
                 time: time
             });

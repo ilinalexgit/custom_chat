@@ -1,14 +1,16 @@
 var ChatClass = function () {
     this.user = false;
     this.room = false;
+    this.config = null;
+    this.selector = null;
+    this.layout = '';
 };
 
 ChatClass.prototype.init = function (selector, config) {
+    this.config = config;
+    this.selector = selector;
     this.initSocket(config.socket);
-    this.render(selector);
-    this.setPanelListeners();
-    this.setMessageListener(config);
-    this.confirmMessageSend(config.onSendSubmit);
+    this.setMessageListener();
 };
 
 ChatClass.prototype.initSocket = function (socket) {
@@ -29,10 +31,13 @@ ChatClass.prototype.$ = function (a) {
     }
 };
 
-ChatClass.prototype.render = function (selector) {
-    var container = this.$(selector);
-    container.innerHTML = tpl({extensions: false});
+ChatClass.prototype.render = function () {
+    var container;
+    container = this.$(this.selector);
+    container.innerHTML = this.layout;
     container.className = 'chat-container';
+    this.setPanelListeners();
+    this.confirmMessageSend(this.config.onSendSubmit);
 };
 
 ChatClass.prototype.wrapDate = function (date) {
@@ -55,7 +60,7 @@ ChatClass.prototype.prepareMessage = function (data) {
     saysSpan = document.createElement("span");
     timeSpan = document.createElement("span");
     messageTextnode = document.createTextNode(data.message);
-    timeTextnode = document.createTextNode(date);
+    timeTextnode = document.createTextNode('(' + date + ')');
     nameTextnode = document.createTextNode(name);
     userSpan.className = 'username';
     saysSpan.className = 'says';
@@ -116,7 +121,7 @@ ChatClass.prototype.confirmMessageSend = function (callback) {
     });
 };
 
-ChatClass.prototype.setMessageListener = function (config) {
+ChatClass.prototype.setMessageListener = function () {
     var scope = this;
 
     this.socket.on('message', function (response) {
@@ -126,11 +131,17 @@ ChatClass.prototype.setMessageListener = function (config) {
 
         switch (response.type) {
             case 'text-message':
+                mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
+                /*
                 node = scope.prepareMessage(response);
                 mesContainer[0].children[0].appendChild(node);
                 response.el = node;
+                */
+                scope.config.onMessageReceive(response);
 
-                config.onMessageReceive(response);
+                break;
+            case 'initial-data':
+                console.log(response);
 
                 break;
             case 'system-data':
@@ -142,6 +153,10 @@ ChatClass.prototype.setMessageListener = function (config) {
                     case 'leave-room':
                         localStorage.removeItem('user-id');
                         break;
+                    case 'send-layout':
+                        scope.layout = response.data.layout;
+                        scope.render();
+                        break;
                     default:
                         break;
                 }
@@ -152,7 +167,7 @@ ChatClass.prototype.setMessageListener = function (config) {
                 mesContainer[0].children[0].appendChild(node);
                 response.el = node;
 
-                config.onMessageReceive(response);
+                scope.config.onMessageReceive(response);
 
                 break;
             case 'update-rooms':
