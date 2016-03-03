@@ -40,42 +40,6 @@ ChatClass.prototype.render = function () {
     this.confirmMessageSend(this.config.onSendSubmit);
 };
 
-ChatClass.prototype.wrapDate = function (date) {
-    var dateObj;
-
-    dateObj = new Date(date);
-    return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
-    //return dateObj.toUTCString();
-};
-
-ChatClass.prototype.prepareMessage = function (data) {
-    var date, node, messageTextnode, userSpan,
-        saysSpan, timeSpan, timeTextnode, name, nameTextnode;
-
-    name = (data.user && data.user.name) ? data.user.name + ':' : 'bot:';
-
-    date = this.wrapDate(data.time);
-    node = document.createElement("li");
-    userSpan = document.createElement("span");
-    saysSpan = document.createElement("span");
-    timeSpan = document.createElement("span");
-    messageTextnode = document.createTextNode(data.message);
-    timeTextnode = document.createTextNode('(' + date + ')');
-    nameTextnode = document.createTextNode(name);
-    userSpan.className = 'username';
-    saysSpan.className = 'says';
-    timeSpan.className = 'time';
-    userSpan.appendChild(nameTextnode);
-    saysSpan.appendChild(messageTextnode);
-    timeSpan.appendChild(timeTextnode);
-    node.className = 'msg';
-    node.appendChild(timeSpan);
-    node.appendChild(userSpan);
-    node.appendChild(saysSpan);
-
-    return node;
-};
-
 ChatClass.prototype.sendMessage = function (selector) {
     var input;
 
@@ -132,11 +96,6 @@ ChatClass.prototype.setMessageListener = function () {
         switch (response.type) {
             case 'text-message':
                 mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
-                /*
-                node = scope.prepareMessage(response);
-                mesContainer[0].children[0].appendChild(node);
-                response.el = node;
-                */
                 scope.config.onMessageReceive(response);
 
                 break;
@@ -163,10 +122,7 @@ ChatClass.prototype.setMessageListener = function () {
 
                 break;
             case 'system-message':
-                node = scope.prepareMessage(response);
-                mesContainer[0].children[0].appendChild(node);
-                response.el = node;
-
+                mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
                 scope.config.onMessageReceive(response);
 
                 break;
@@ -186,8 +142,7 @@ ChatClass.prototype.setMessageListener = function () {
                     }
 
                     if (response.message !== '') {
-                        node = scope.prepareMessage(response);
-                        mesContainer[0].children[0].appendChild(node);
+                        mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
                     }
                 } else {
                     roomsSelect[0].innerHTML =

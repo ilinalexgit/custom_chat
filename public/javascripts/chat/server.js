@@ -29,19 +29,36 @@ module.exports = function (app) {
         });
 
         socket.on('createRoom', function (data) {
+            var message;
+
             chat.updateRoomsList('add-room', data.room);
+            time = new Date().getTime();
+            message = chat.prepareMessage({
+                system: true,
+                text: 'new room \'' + data.room + '\' created',
+                username: false,
+                time: time
+            });
 
             app.io.emit('message', {
                 type: 'update-rooms',
-                message: 'new room \'' + data.room + '\' created',
+                message: message,
                 rooms: chat.getActiveRooms(),
                 time: time
             });
         });
 
         socket.on('joinRoom', function (data) {
+            var message;
+
             socket.join(data.room);
             time = new Date().getTime();
+            message = chat.prepareMessage({
+                system: true,
+                text: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
+                username: false,
+                time: time
+            });
 
             if(data.user && data.user !== ''){
                 var id = user.serializeUser(user.signinUser({
@@ -58,18 +75,25 @@ module.exports = function (app) {
 
             app.io.to(data.room).emit('message', {
                 type: 'system-message',
-                message: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
+                message: message,
                 time: time
             });
         });
 
         socket.on('leaveRoom', function (data) {
-            var time = new Date().getTime();
+            var message, removedUser;
+
+            removedUser = user.removeUser(data.user.id);
+            time = new Date().getTime();
+            message = chat.prepareMessage({
+                system: true,
+                text: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room',
+                user: removedUser,
+                time: time
+            });
 
             socket.leave(data.room, function (err) {
             });
-
-            var removedUser = user.removeUser(data.user.id);
 
             socket.emit('message', {
                 type: 'system-data',
@@ -80,7 +104,7 @@ module.exports = function (app) {
 
             app.io.emit('message', {
                 type: 'system-message',
-                message: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room',
+                message: message,
                 time: time
             });
         });
@@ -90,8 +114,9 @@ module.exports = function (app) {
             time = new Date().getTime();
 
             message = chat.prepareMessage({
+                system: false,
                 text: data.message,
-                user: user.deserializeUser(data.user_id),
+                username: user.deserializeUser(data.user_id).name,
                 time: time
             });
 

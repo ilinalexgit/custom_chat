@@ -44,7 +44,7 @@ Chat.prototype.broadcastMessage = function() {
     //..
 };
 
-Chat.prototype.wrapDate = function (date) {
+Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
     var dateObj;
 
     dateObj = new Date(date);
@@ -54,11 +54,10 @@ Chat.prototype.wrapDate = function (date) {
 Chat.prototype.prepareMessage = function(config) {
     var messageLayout, date;
 
-    date = this.wrapDate(config.time);
-
     messageLayout = this.swig.renderFile('public/javascripts/chat/themes/default/includes/message.html', {
-        time: date,
-        username: config.user.name,
+        time: config.time,
+        system: config.system,
+        username: config.username,
         says: config.text
 
     });
