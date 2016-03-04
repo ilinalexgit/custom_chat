@@ -1,21 +1,23 @@
-var Chat = function(swig){
+var Chat = function (swig, theme) {
+    this.path = require('path');
+    this.theme = theme || 'default';
     this.rooms = [];
     this.swig = swig;
 };
 
-Chat.prototype.addUserToChat = function() {
+Chat.prototype.addUserToChat = function () {
     //..
 };
 
-Chat.prototype.deleteUserFromChat = function() {
+Chat.prototype.deleteUserFromChat = function () {
     //..
 };
 
-Chat.prototype.canAccess = function() {
+Chat.prototype.canAccess = function () {
     //..
 };
 
-Chat.prototype.updateRoomsList = function(action, room) {
+Chat.prototype.updateRoomsList = function (action, room) {
     switch (action) {
         case 'add-room':
             this.rooms.push(room);
@@ -28,19 +30,19 @@ Chat.prototype.updateRoomsList = function(action, room) {
     }
 };
 
-Chat.prototype.getActiveRooms = function() {
-    return this.rooms;
+Chat.prototype.getActiveRooms = function () {
+    return (this.rooms.length !== 0) ? this.rooms : 'default';
 };
 
-Chat.prototype.createChat = function() {
+Chat.prototype.createChat = function () {
     //..
 };
 
-Chat.prototype.deleteChat = function() {
+Chat.prototype.deleteChat = function () {
     //..
 };
 
-Chat.prototype.broadcastMessage = function() {
+Chat.prototype.broadcastMessage = function () {
     //..
 };
 
@@ -51,21 +53,25 @@ Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
     return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
 };
 
-Chat.prototype.prepareMessage = function(config) {
-    var messageLayout, date;
+Chat.prototype.prepareMessage = function (config) {
+    var messageLayout, date, scope;
 
-    messageLayout = this.swig.renderFile('public/javascripts/chat/themes/default/includes/message.html', {
-        time: config.time,
-        system: config.system,
-        username: config.username,
-        says: config.text
+    scope = this;
 
-    });
+    messageLayout = this.swig.renderFile(
+        this.path.join(__dirname, '../themes/' + scope.theme + '/includes/message.html'),
+        {
+            time: config.time,
+            system: config.system,
+            username: config.username,
+            says: config.text
+        }
+    );
 
     return messageLayout;
 };
 
-Chat.prototype.loadHistory = function() {
+Chat.prototype.loadHistory = function () {
     //..
 };
 

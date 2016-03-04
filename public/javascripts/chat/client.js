@@ -2,11 +2,13 @@ var ChatClass = function () {
     this.user = false;
     this.room = false;
     this.config = null;
+    this.theme = '';
     this.selector = null;
     this.layout = '';
 };
 
 ChatClass.prototype.init = function (selector, config) {
+    this.theme = (config.theme) ? config.theme : 'default';
     this.config = config;
     this.selector = selector;
     this.initSocket(config.socket);
@@ -14,7 +16,7 @@ ChatClass.prototype.init = function (selector, config) {
 };
 
 ChatClass.prototype.initSocket = function (socket) {
-    this.socket = io.connect(socket);
+    this.socket = io.connect(socket, {query: 'theme=' + this.theme});
 };
 
 ChatClass.prototype.$ = function (a) {
@@ -38,6 +40,22 @@ ChatClass.prototype.render = function () {
     container.className = 'chat-container';
     this.setPanelListeners();
     this.confirmMessageSend(this.config.onSendSubmit);
+    this.includeStylesheet();
+};
+
+ChatClass.prototype.includeStylesheet = function () {
+    var head, link;
+
+    head = document.getElementsByTagName('head')[0];
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = '/javascripts/chat/themes/' + this.theme + '/style.css';//TODO: send path to file from server
+    link.media = 'all';
+
+    console.log(link);
+
+    head.appendChild(link);
 };
 
 ChatClass.prototype.sendMessage = function (selector) {

@@ -1,30 +1,32 @@
 module.exports = function (app) {
-    var socket_io, lib, time, rooms, chat, user, layout, swig;
+    var socket_io, lib, time, rooms, chat, user, layout, swig, theme;
     swig = require('swig');
+    theme = 'default';
 
     socket_io = require("socket.io");
     lib = require("./lib");
-    layout = swig.renderFile('public/javascripts/chat/themes/default/index.html', {});
 
     app.io = socket_io();
-    chat = new lib.Chat(swig);
+    app.io.use(function (socket, next) {
+        var config = socket.request;
+        theme = config._query['theme'];
+        next();
+    });
+
+    chat = new lib.Chat(swig, theme);
     user = new lib.User();
-    rooms = chat.getActiveRooms();
 
     app.io.sockets.on('connection', function (socket) {
+        rooms = chat.getActiveRooms();
         time = new Date().getTime();
+        layout = swig.renderFile(__dirname + '/themes/' + theme + '/index.html', {
+            rooms: rooms
+        });
 
         socket.emit('message', {
             type: 'system-data',
             action: 'send-layout',
             data: {layout: layout},
-            time: time
-        });
-
-        socket.emit('message', {
-            type: 'update-rooms',
-            message: '',
-            rooms: (rooms.length === 0) ? 'default' : rooms,
             time: time
         });
 
@@ -60,7 +62,7 @@ module.exports = function (app) {
                 time: time
             });
 
-            if(data.user && data.user !== ''){
+            if (data.user && data.user !== '') {
                 var id = user.serializeUser(user.signinUser({
                     name: data.user
                 }));
