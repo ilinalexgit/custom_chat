@@ -2,7 +2,7 @@ chat.init(
     '#chat1',
     {
         socket: 'http://localhost:3000',
-        theme: false,//'green_theme'
+        theme: false,
         onSendSubmit: function(){
             var input;
             input = chat.$('.message-input');

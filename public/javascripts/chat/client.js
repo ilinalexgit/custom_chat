@@ -53,8 +53,6 @@ ChatClass.prototype.includeStylesheet = function () {
     link.href = '/javascripts/chat/themes/' + this.theme + '/style.css';//TODO: send path to file from server
     link.media = 'all';
 
-    console.log(link);
-
     head.appendChild(link);
 };
 
