@@ -1,4 +1,4 @@
-module.exports = function (app) {
+module.exports = function (app, loginCallback) {
     var socket_io, lib, time, rooms,
         chat, user, layout, swig, theme;
 
@@ -32,6 +32,11 @@ module.exports = function (app) {
             time: time
         });
 
+        socket.emit('message', {
+            type: 'update-rooms',
+            rooms: rooms !== 'default' ? rooms : 'default'
+        });
+
         socket.on('createRoom', chat.createRoom.bind(chat));
 
         socket.on('joinRoom', function(data){
@@ -44,6 +49,19 @@ module.exports = function (app) {
 
         socket.on('client-message', function (data) {
             chat.receiveMessage.call(socket, chat, data, user);
+        });
+
+        socket.on('get-theme', function (data) {
+            layout = swig.renderFile(__dirname + '/themes/' + data.theme + '/index.html', {
+                rooms: rooms
+            });
+
+            socket.emit('message', {
+                type: 'system-data',
+                action: 'send-custom-layout',
+                data: {layout: layout},
+                time: time
+            });
         });
     });
 };

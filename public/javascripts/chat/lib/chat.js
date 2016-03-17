@@ -7,7 +7,7 @@ var Chat = function (swig, theme, io) {
 };
 
 Chat.prototype.addUserToChat = function (chat, data, user) {
-    var message, time;
+    var message, time, storedUser;
 
     this.join(data.room);
     time = new Date().getTime();
@@ -20,7 +20,7 @@ Chat.prototype.addUserToChat = function (chat, data, user) {
     });
 
     if (data.user && data.user !== '') {
-        var id = user.serializeUser(user.signinUser({
+        storedUser = user.serializeUser(user.signinUser({
             name: data.user
         }));
     }
@@ -28,7 +28,11 @@ Chat.prototype.addUserToChat = function (chat, data, user) {
     this.emit('message', {
         type: 'system-data',
         action: 'join-room',
-        data: {id: id},
+        data: {
+            container: data.container,
+            room: data.room,
+            user: storedUser
+        },
         time: time
     });
 
@@ -41,31 +45,35 @@ Chat.prototype.addUserToChat = function (chat, data, user) {
 
 Chat.prototype.removeUserFromChat = function (chat, data, user) {
     var message, removedUser, time;
-    removedUser = user.removeUser(data.user.id);
 
-    time = new Date().getTime();
-    message = chat.prepareMessage({
-        system: true,
-        text: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room',
-        user: removedUser,
-        time: time
-    });
+    removedUser = user.removeUser(data.user);
 
-    this.leave(data.room, function (err) {
-    });
+    console.log(data.user);
 
-    this.emit('message', {
-        type: 'system-data',
-        action: 'leave-room',
-        data: removedUser,
-        time: time
-    });
+    if(removedUser){
+        time = new Date().getTime();
+        message = chat.prepareMessage({
+            system: true,
+            text: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room',
+            user: removedUser,
+            time: time
+        });
 
-    chat.io.emit('message', {
-        type: 'system-message',
-        message: message,
-        time: time
-    });
+        this.leave(data.room, function (err) {/*console.log(err);*/});
+
+        this.emit('message', {
+            type: 'system-data',
+            action: 'leave-room',
+            data: removedUser,
+            time: time
+        });
+
+        chat.io.emit('message', {
+            type: 'system-message',
+            message: message,
+            time: time
+        });
+    }
 };
 
 Chat.prototype.receiveMessage = function (chat, data, user) {
@@ -92,6 +100,10 @@ Chat.prototype.canAccess = function () {
     //..
 };
 
+Chat.prototype.setId = function () {
+    return '_' + Math.random().toString(36).substr(2, 9);
+};
+
 Chat.prototype.updateRoomsList = function (action, room) {
     switch (action) {
         case 'add-room':
@@ -112,7 +124,10 @@ Chat.prototype.getActiveRooms = function () {
 Chat.prototype.createRoom = function (data) {
     var message, time;
 
-    this.updateRoomsList('add-room', data.room);
+    this.updateRoomsList('add-room', {
+        name: data.room,
+        id: this.setId()
+    });
     time = new Date().getTime();
     message = this.prepareMessage({
         system: true,
@@ -127,14 +142,6 @@ Chat.prototype.createRoom = function (data) {
         rooms: this.getActiveRooms(),
         time: time
     });
-};
-
-Chat.prototype.deleteChat = function () {
-    //..
-};
-
-Chat.prototype.broadcastMessage = function () {
-    //..
 };
 
 Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
@@ -160,10 +167,6 @@ Chat.prototype.prepareMessage = function (config) {
     );
 
     return messageLayout;
-};
-
-Chat.prototype.loadHistory = function () {
-    //..
 };
 
 module.exports = Chat;

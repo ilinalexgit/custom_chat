@@ -38,7 +38,7 @@ User.prototype.removeUser = function (token) {
 
 User.prototype.serializeUser = function (data) {
     this.users.push(data);
-    return data.id;
+    return data;
 };
 
 User.prototype.deserializeUser = function (token) {
@@ -56,28 +56,8 @@ User.prototype.deserializeUser = function (token) {
     return false;
 };
 
-User.prototype.getActiveUsers = function () {
-    return this.users;
-};
-
 User.prototype.setId = function () {
     return '_' + Math.random().toString(36).substr(2, 9);
-};
-
-User.prototype.getRole = function () {
-    //..
-};
-
-User.prototype.getMeta = function (id) {
-    //..
-};
-
-User.prototype.setStatus = function () {
-    //..
-};
-
-User.prototype.getUserChats = function () {
-    //..
 };
 
 module.exports = User;

@@ -28,7 +28,9 @@ app.use(cookieParser());
 app.use(require('less-middleware')(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/node_modules', express.static(path.join(__dirname, '/node_modules')));
-require(path.join(__dirname, 'public/javascripts/chat/server.js'))(app);
+require(path.join(__dirname, 'public/javascripts/chat/server.js'))(app, function(){
+
+});
 
 app.all('*', function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
