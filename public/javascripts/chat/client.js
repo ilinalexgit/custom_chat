@@ -26,8 +26,8 @@ ChatClass.prototype.getConfig = function () {
 
 ChatClass.prototype.getUserInstance = function (id) {
     var result = false;
-    this.users.forEach(function(item){
-        if(item.data.user.id === id){
+    this.users.forEach(function (item) {
+        if (item.data.user.id === id) {
             result = item;
         }
     });
@@ -61,27 +61,78 @@ ChatClass.prototype.includeStylesheet = function () {
     link.href = '/javascripts/chat/themes/' + this.theme + '/style.css';
     link.media = 'all';
 
-    if(!createdEl){
+    if (!createdEl) {
         head.appendChild(link);
-    }else{
+    } else {
         createdEl.parentNode.removeChild(createdEl);
         head.appendChild(link);
     }
 };
 
 ChatClass.prototype.sendMessage = function (input, targetRoom) {
-    var userId;
+    var userId, url;
 
     userId = input.parentNode.parentNode.classList[2].split('-')[1];
+    url = function (text) {
+        var source, urlArray, url, matchArray, regexToken;
+
+        source = (text || '').toString();
+        urlArray = [];
+        regexToken = /(((ftp|https?):\/\/)[\-\w@:%_\+.~#?,&\/\/=]+)|((mailto:)?[_.\w-]+@([\w][\w\-]+\.)+[a-zA-Z]{2,3})/g;
+
+        while( (matchArray = regexToken.exec( source )) !== null )
+        {
+            var token = matchArray[0];
+            urlArray.push( token );
+        }
+
+        return urlArray;
+    };
 
     if (input.value && input.value !== '') {
-        this.socket.emit('client-message', {
-            type: 'client-message',
-            message: input.value,
-            room: targetRoom,
-            user_id: userId
-        });
+        var found = url(input.value);
+        if(!found.length){
+            this.socket.emit('client-message', {
+                type: 'client-message',
+                message: input.value,
+                room: targetRoom,
+                user_id: userId
+            });
+        }else{
+            this.socket.emit('plugin-link', {
+                data: found,
+                text: input.value,
+                room: targetRoom,
+                user_id: userId
+            });
+        }
     }
+};
+
+ChatClass.prototype.logMessage = function (message) {
+    var log;
+
+    log = JSON.parse(localStorage.getItem('message-log')) || [];
+
+    if (!log) {
+        localStorage.setItem('message-log', JSON.stringify([
+            {
+                text: message.text || null,
+                user: message.user || null,
+                time: message.time || null
+            }
+        ]));
+    } else {
+        if (log.length > 30) {
+            log.pop();
+        }
+        log.push(message);
+        localStorage.setItem('message-log', JSON.stringify(log));
+    }
+};
+
+ChatClass.prototype.clearLog = function () {
+    localStorage.removeItem('message-log');
 };
 
 ChatClass.prototype.setMessageListener = function () {
@@ -94,12 +145,18 @@ ChatClass.prototype.setMessageListener = function () {
             case 'text-message':
                 mesContainer = scope.$('.messages-container');
                 for (i = 0; i < mesContainer.length; i++) {
+                    scope.logMessage(response);
                     mesContainer[i].children[0].insertAdjacentHTML('beforeend', response.message);
                 }
                 scope.config.onMessageReceive(response);
                 break;
             case 'initial-data':
                 console.log(response);
+                break;
+            case 'update-messages':
+                scope.views.forEach(function (item) {
+                    item.redrawMessages(response);
+                });
                 break;
             case 'system-data':
                 switch (response.action) {
@@ -124,11 +181,12 @@ ChatClass.prototype.setMessageListener = function () {
                         scope.layout = response.data.layout;
                         break;
                     case 'send-custom-layout':
-                        scope.views.forEach(function(item){
+                        scope.views.forEach(function (item) {
                             user = scope.getUserInstance(item.owner.id);
                             item.unrender();
                             item.render(response.data.layout);
                             user.setOwner(item, item.owner.id);
+                            item.updateThemeMessages(scope.theme);
                         });
                         scope.includeStylesheet();
                         break;
@@ -138,6 +196,7 @@ ChatClass.prototype.setMessageListener = function () {
 
                 break;
             case 'system-message':
+                //console.log(response);
                 mesContainer = scope.$('.messages-container');
                 mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
                 scope.config.onMessageReceive(response);
@@ -230,7 +289,7 @@ var UserClass = function (data, rootScope) {
     this.rootScope = rootScope || null;
 };
 
-UserClass.prototype.setOwner = function (view, id) {
+UserClass.prototype.setOwner = function (view, id) {//TODO: store user id in User class
     var i, length;
 
     length = this.rootScope.users.length;
@@ -340,6 +399,22 @@ ViewClass.prototype.switchTheme = function (theme) {
     this.rootScope.socket.emit('get-theme', {
         theme: theme
     });
+};
+
+ViewClass.prototype.updateThemeMessages = function (theme) {
+    var log;
+
+    log = JSON.parse(localStorage.getItem('message-log'));
+
+    this.rootScope.socket.emit('update-messages', {
+        messages: log,
+        theme: theme,
+        room: this.room
+    });
+};
+
+ViewClass.prototype.redrawMessages = function (data) {
+    this.el.querySelector('.messages-container ul').innerHTML = data.message;
 };
 
 var RoomClass = function (socket) {

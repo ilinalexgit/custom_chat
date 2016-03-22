@@ -1,12 +1,15 @@
 module.exports = function (app, loginCallback) {
     var socket_io, lib, time, rooms,
-        chat, user, layout, swig, theme;
+        chat, user, layout, swig, theme,
+        plugins, fs, path, initPlugins;
 
+    path = require('path');
+    fs = require('fs');
     socket_io = require("socket.io");
     swig = require('swig');
-    theme = 'default';
-
     lib = require("./lib");
+    theme = 'default';
+    plugins = [];
 
     app.io = socket_io();
     app.io.use(function (socket, next) {
@@ -17,6 +20,17 @@ module.exports = function (app, loginCallback) {
 
     user = new lib.User();
     chat = new lib.Chat(swig, theme, app.io);
+
+    fs.readdir(path.join(__dirname, 'plugins'), function(err, files){
+        files.forEach(function (item) {//load all plugins
+            if(item.split('-')[0] === 'plugin'){
+                plugins.push({
+                    name: item.split('.')[0],
+                    module: require(path.join(__dirname, 'plugins/' + item))
+                });
+            }
+        });
+    });
 
     app.io.sockets.on('connection', function (socket) {
         rooms = chat.getActiveRooms();
@@ -38,21 +52,14 @@ module.exports = function (app, loginCallback) {
         });
 
         socket.on('createRoom', chat.createRoom.bind(chat));
-
-        socket.on('joinRoom', function(data){
-            chat.addUserToChat.call(socket, chat, data, user);
-        });
-
-        socket.on('leaveRoom', function (data) {
-            chat.removeUserFromChat.call(socket, chat, data, user);
-        });
-
-        socket.on('client-message', function (data) {
-            chat.receiveMessage.call(socket, chat, data, user);
-        });
+        socket.on('joinRoom', chat.addUserToChat.bind(socket, chat, user));
+        socket.on('leaveRoom', chat.removeUserFromChat.bind(socket, chat, user));
+        socket.on('client-message', chat.receiveMessage.bind(socket, chat, user));
 
         socket.on('get-theme', function (data) {
-            layout = swig.renderFile(__dirname + '/themes/' + data.theme + '/index.html', {
+            chat.theme =  data.theme;
+
+            layout = swig.renderFile(__dirname + '/themes/' + chat.theme + '/index.html', {
                 rooms: rooms
             });
 
@@ -63,5 +70,18 @@ module.exports = function (app, loginCallback) {
                 time: time
             });
         });
+
+        socket.on('update-messages', function (data) {
+            chat.updateMessages.call(socket, chat, data, user);
+        });
+
+        if(plugins.length !== 0){
+            plugins.forEach(function (item) {//load all plugins
+                socket.on(item.name, function(data){
+                    var plugin = item.module(socket, chat, user);
+                    plugin.callback(data);
+                });
+            });
+        }
     });
 };

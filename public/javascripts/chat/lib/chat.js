@@ -6,7 +6,31 @@ var Chat = function (swig, theme, io) {
     this.io = io;
 };
 
-Chat.prototype.addUserToChat = function (chat, data, user) {
+Chat.prototype.createRoom = function (data) {
+    var message, time;
+    time = new Date().getTime();
+
+    this.updateRoomsList('add-room', {
+        name: data.room,
+        id: this.setId()
+    });
+
+    message = this.prepareMessage({
+        system: true,
+        text: 'new room \'' + data.room + '\' created',
+        username: false,
+        time: time
+    });
+
+    this.io.emit('message', {
+        type: 'update-rooms',
+        message: message,
+        rooms: this.getActiveRooms(),
+        time: time
+    });
+};
+
+Chat.prototype.addUserToChat = function (chat, user, data) {
     var message, time, storedUser;
 
     this.join(data.room);
@@ -43,12 +67,10 @@ Chat.prototype.addUserToChat = function (chat, data, user) {
     });
 };
 
-Chat.prototype.removeUserFromChat = function (chat, data, user) {
+Chat.prototype.removeUserFromChat = function (chat, user, data) {
     var message, removedUser, time;
 
     removedUser = user.removeUser(data.user);
-
-    console.log(data.user);
 
     if(removedUser){
         time = new Date().getTime();
@@ -76,7 +98,7 @@ Chat.prototype.removeUserFromChat = function (chat, data, user) {
     }
 };
 
-Chat.prototype.receiveMessage = function (chat, data, user) {
+Chat.prototype.receiveMessage = function (chat, user, data) {
     var message, time;
 
     time = new Date().getTime();
@@ -91,8 +113,30 @@ Chat.prototype.receiveMessage = function (chat, data, user) {
     chat.io.sockets.in(data.room).emit('message', {
         type: 'text-message',
         message: message,
+        text: data.message,
         user: user.deserializeUser(data.user_id),
         time: time
+    });
+};
+
+Chat.prototype.updateMessages = function (chat, data, user) {
+    var message, messages;
+
+    messages = '';
+
+    data.messages.forEach(function(item){
+        message = chat.prepareMessage({
+            system: false,
+            text: item.text,
+            username: item.user.name,
+            time: item.time
+        });
+        messages += message;
+    });
+
+    chat.io.sockets.in(data.room).emit('message', {
+        type: 'update-messages',
+        message: messages
     });
 };
 
@@ -121,29 +165,6 @@ Chat.prototype.getActiveRooms = function () {
     return (this.rooms.length !== 0) ? this.rooms : 'default';
 };
 
-Chat.prototype.createRoom = function (data) {
-    var message, time;
-
-    this.updateRoomsList('add-room', {
-        name: data.room,
-        id: this.setId()
-    });
-    time = new Date().getTime();
-    message = this.prepareMessage({
-        system: true,
-        text: 'new room \'' + data.room + '\' created',
-        username: false,
-        time: time
-    });
-
-    this.io.emit('message', {
-        type: 'update-rooms',
-        message: message,
-        rooms: this.getActiveRooms(),
-        time: time
-    });
-};
-
 Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
     var dateObj;
 
@@ -152,7 +173,7 @@ Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
 };
 
 Chat.prototype.prepareMessage = function (config) {
-    var messageLayout, date, scope;
+    var messageLayout, scope;
 
     scope = this;
 
