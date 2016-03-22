@@ -64,8 +64,6 @@ module.exports = function (socket, chat, user) {
                     scope.message += chat.swig.renderFile(
                         path.join(__dirname, './message.html'),
                         {
-                            time: time,
-                            username: user.deserializeUser(result.user_id).name,
                             url: result.data[0],
                             description: description.limit(100),
                             title: title
@@ -76,7 +74,12 @@ module.exports = function (socket, chat, user) {
                         setTimeout(function() {
                             chat.io.sockets.in(result.room).emit('message', {
                                 type: 'text-message',
-                                message: scope.message,
+                                message:
+                                    '<li class=\'msg\'>' +
+                                    '<span class="time">(' + chat.wrapDate(time) + ')</span>' +
+                                    '<span class="username">' + user.deserializeUser(result.user_id).name + '</span>' +
+                                        scope.message +
+                                    '</li>',
                                 text: scope.message,
                                 user: user.deserializeUser(result.user_id),
                                 time: time

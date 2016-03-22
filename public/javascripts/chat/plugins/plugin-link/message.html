@@ -1,9 +1,5 @@
-<li class="msg">
-    <span class="time">({{ time|date('H:i:s') }})</span>
-    <span class="username">{{ username|default('bot') }}:</span>
-    <span class="says grabbed-preview">
-        <a href={{url}} title="{{url}}">{{url}}</a>
-        <h4>{{title}}</h4>
-        <p>{{description}}</p>
-    </span>
-</li>
+<span class="says grabbed-preview">
+    <a href={{url}} title="{{url}}">{{url}}</a>
+    <h4>{{title}}</h4>
+    <p>{{description}}</p>
+</span>
