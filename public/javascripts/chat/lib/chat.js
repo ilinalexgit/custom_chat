@@ -60,7 +60,7 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
         time: time
     });
 
-    this.emit('message', {
+    chat.io.to(data.room).emit('message', {
         type: 'update-users',
         users: user.users
     });
@@ -93,6 +93,11 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
             action: 'leave-room',
             data: removedUser,
             time: time
+        });
+
+        chat.io.emit('message', {
+            type: 'update-users',
+            users: user.users
         });
 
         chat.io.emit('message', {

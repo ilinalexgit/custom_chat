@@ -234,8 +234,10 @@ ChatClass.prototype.setMessageListener = function () {
                 }
                 break;
             case 'update-users':
+                scope.$('.users-container')[0].querySelector('ul').innerHTML = '';
                 response.users.forEach(function (item) {
-                    scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', '<li>' + item.name + '</li>');
+                    var el = '<li>' + item.name + '</li>';
+                    scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', el);
                 });
                 break;
             case 'server-authorize':
