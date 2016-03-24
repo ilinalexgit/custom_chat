@@ -335,13 +335,13 @@ ViewClass.prototype.render = function (layout) {
     var container, scope;
 
     container = this.$(this.selector);
+    this.el = container;
     scope = this;
 
     if (container.innerHTML === '') {
         container.innerHTML = layout;
         container.className = 'chat-container';
         container.className += " room-" + this.room;
-        this.el = container;
         this.confirmMessageSend(this.room, this.config.onSendSubmit);
 
         //this.leaveRoom();

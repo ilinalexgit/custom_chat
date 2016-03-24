@@ -3,40 +3,39 @@ var request = require("request"),
     Promise = require("promise"),
     path = require('path');
 
+String.prototype.limit = function (limit, userParams) {
+    var text, options, prop, lastSpace;
+
+    text = this;
+    options = {
+        ending: '...', trim: true, words: true
+    };
+
+    if (limit !== parseInt(limit) || limit <= 0) return this;
+
+    if (typeof userParams == 'object') {
+        for (prop in userParams) {
+            if (userParams.hasOwnProperty.call(userParams, prop)) {
+                options[prop] = userParams[prop];
+            }
+        }
+    }
+
+    if (options.trim) text = text.trim();
+
+    if (text.length <= limit) return text;
+
+    text = text.slice(0, limit);
+    lastSpace = text.lastIndexOf(" ");
+    if (options.words && lastSpace > 0) {
+        text = text.substr(0, lastSpace);
+    }
+    return text + options.ending;
+};
+
 module.exports = function (socket, chat, user) {
     var Plugin = function (socket) {
         this.socket = socket || null;
-    };
-
-    String.prototype.limit = function (limit, userParams) {
-        var text, options, prop, lastSpace, processed;
-
-        processed = false;
-        text = this;
-        options = {
-            ending: '...', trim: true, words: true
-        };
-
-        if (limit !== parseInt(limit) || limit <= 0) return this;
-
-        if (typeof userParams == 'object') {
-            for (prop in userParams) {
-                if (userParams.hasOwnProperty.call(userParams, prop)) {
-                    options[prop] = userParams[prop];
-                }
-            }
-        }
-
-        if (options.trim) text = text.trim();
-
-        if (text.length <= limit) return text;
-
-        text = text.slice(0, limit);
-        lastSpace = text.lastIndexOf(" ");
-        if (options.words && lastSpace > 0) {
-            text = text.substr(0, lastSpace);
-        }
-        return text + options.ending;
     };
 
     Plugin.prototype.callback = function (result) {
