@@ -60,6 +60,11 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
         time: time
     });
 
+    this.emit('message', {
+        type: 'update-users',
+        users: user.users
+    });
+
     chat.io.to(data.room).emit('message', {
         type: 'system-message',
         message: message,

@@ -233,6 +233,11 @@ ChatClass.prototype.setMessageListener = function () {
                         '<option value="" disabled selected>no rooms available</option>';
                 }
                 break;
+            case 'update-users':
+                response.users.forEach(function (item) {
+                    scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', '<li>' + item.name + '</li>');
+                });
+                break;
             case 'server-authorize':
                 break;
             default:

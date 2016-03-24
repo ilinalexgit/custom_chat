@@ -21,10 +21,41 @@
     }
 }
 
+.layout{
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.users-container{
+    width: 20%;
+    box-sizing: border-box;
+    float: left;
+    border: 1px solid #7d7d7d;
+    padding: 5px;
+
+    ul{
+        padding: 0;
+        margin: 0;
+
+        li{
+            list-style-type: none;
+
+            &:hover{
+                cursor: pointer;
+                text-decoration: underline;
+                color: #1181ff;
+            }
+        }
+    }
+}
+
 .messages-container{
-    margin: 0 0 10px;
+    margin: 0 0 10px 1%;
+    box-sizing: border-box;
     padding: 10px;
     border: 1px solid #7d7d7d;
+    width: 79%;
+    float: right;
 
     ul{
         padding: 0;

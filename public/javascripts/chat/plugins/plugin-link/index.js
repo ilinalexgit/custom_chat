@@ -43,11 +43,11 @@ module.exports = function (socket, chat, user) {
         var $, description, title, time, message, scope;
 
         /*function urlify(text) {
-            var urlRegex = /(https?:\/\/[^\s]+)/g;
-            return text.replace(urlRegex, function(url) {
-                return '<a href="' + url + '">' + url + '</a>';
-            });
-        }*/
+         var urlRegex = /(https?:\/\/[^\s]+)/g;
+         return text.replace(urlRegex, function(url) {
+         return '<a href="' + url + '">' + url + '</a>';
+         });
+         }*/
 
         //console.log(urlify(result.text));
 
@@ -70,20 +70,21 @@ module.exports = function (socket, chat, user) {
                         }
                     );
 
-                    if(i === result.data.length - 1){
-                        setTimeout(function() {
+                    if (i === result.data.length - 1) {
+                        setTimeout(function () {
                             chat.io.sockets.in(result.room).emit('message', {
                                 type: 'text-message',
-                                message:
-                                    '<li class=\'msg\'>' +
+                                message: '<li class=\'msg\'>' +
                                     '<span class="time">(' + chat.wrapDate(time) + ')</span>' +
-                                    '<span class="username">' + user.deserializeUser(result.user_id).name + '</span>' +
-                                        scope.message +
+                                    '<span class="username">' + user.deserializeUser(result.user_id).name + ':</span>' +
+                                    scope.message +
                                     '</li>',
                                 text: scope.message,
                                 user: user.deserializeUser(result.user_id),
                                 time: time
                             });
+                            
+                            console.log('result', result);
                         }, 0);
                     }
                 } else {
