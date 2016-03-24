@@ -1,6 +1,10 @@
 .chat-container{
     padding: 10px;
     border: 1px solid #008000;
+
+    textarea{
+        width: 100%;
+    }
 }
 
 .panel{
@@ -19,6 +23,34 @@
         cursor: pointer;
         text-decoration: underline;
         color: #1181ff;
+    }
+}
+
+.layout{
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.users-container{
+    width: 20%;
+    box-sizing: border-box;
+    float: left;
+    border: 1px solid #7d7d7d;
+    padding: 5px;
+
+    ul{
+        padding: 0;
+        margin: 0;
+
+        li{
+            list-style-type: none;
+
+            &:hover{
+                cursor: pointer;
+                text-decoration: underline;
+                color: #1181ff;
+            }
+        }
     }
 }
 
@@ -45,6 +77,17 @@
 
             &.username{
                 font-weight: bold;
+            }
+        }
+
+        .grabbed-preview{
+            margin: 5px;
+            padding: 5px;
+            background-color: #8fcbff;
+            border: 1px solid #7d7d7d;
+
+            p, h4{
+                margin: 0;
             }
         }
     }
