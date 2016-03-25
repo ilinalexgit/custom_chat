@@ -6,6 +6,8 @@ var cookieParser = require('cookie-parser');
 var swig = require('swig');
 var bodyParser = require('body-parser');
 
+var cons = require('consolidate');
+
 var routes = require('./routes/index');
 var users = require('./routes/users');
 

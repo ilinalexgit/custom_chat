@@ -12,8 +12,15 @@ ChatClass.prototype.init = function (selector, config) {
     this.config = config || null;
     this.selector = selector;
     this.initSocket(config.socket);
+    this.checkConnection();
     this.setMessageListener();
     this.includeStylesheet();
+};
+
+ChatClass.prototype.checkConnection = function () {
+    this.socket.emit('check-connection', {
+        id: localStorage.getItem('user-id')
+    });
 };
 
 ChatClass.prototype.initSocket = function (socket) {
@@ -161,7 +168,8 @@ ChatClass.prototype.setMessageListener = function () {
             case 'system-data':
                 switch (response.action) {
                     case 'join-room':
-                        //localStorage.setItem('user-id', response.data.user.id);
+                        //console.log(response);
+                        localStorage.setItem('user-id', response.data.user.id);
                         user = new UserClass(response.data, scope);
                         scope.users.push(user);
                         view = new ViewClass(
@@ -240,6 +248,11 @@ ChatClass.prototype.setMessageListener = function () {
                     scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', el);
                 });
                 break;
+            case 'connection-response':
+                if(response.user){
+                    scope.callJoinRoom(response.user.name, '#chat1');
+                }
+                break;
             case 'server-authorize':
                 break;
             default:
@@ -285,8 +298,10 @@ ChatClass.prototype.callJoinRoom = function (userName, selector) {
 ChatClass.prototype.callLeaveRoom = function (roomId) {
     var room, container, userId;
 
+    localStorage.removeItem('user-id');
     container = this.$('.room-' + roomId);
     userId = container[0].classList[2].split('-')[1];
+    container[0].classList.remove('owner-' + userId);
     room = new RoomClass(this.socket);//TODO: store instance of room in parent class
     room.leaveRoom(userId, roomId);
 };

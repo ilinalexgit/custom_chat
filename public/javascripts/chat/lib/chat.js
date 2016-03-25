@@ -44,9 +44,13 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
     });
 
     if (data.user && data.user !== '') {
-        storedUser = user.serializeUser(user.signinUser({
-            name: data.user
-        }));
+        if(!user.deserializeUserByName(data.user)){
+            storedUser = user.serializeUser(user.signinUser({
+                name: data.user
+            }));
+        }else{
+            storedUser = user.deserializeUserByName(data.user);
+        }
     }
 
     this.emit('message', {

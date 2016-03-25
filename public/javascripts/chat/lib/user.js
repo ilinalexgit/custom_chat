@@ -56,6 +56,21 @@ User.prototype.deserializeUser = function (token) {
     return false;
 };
 
+User.prototype.deserializeUserByName = function (name) {//TODO: refactor deserialize methods to avoid duplication
+    var i, length;
+
+    i = 0;
+    length = this.users.length;
+
+    for (i; i < length; i++) {
+        if (this.users[i].name === name) {
+            return this.users[i];
+        }
+    }
+
+    return false;
+};
+
 User.prototype.setId = function () {
     return '_' + Math.random().toString(36).substr(2, 9);
 };

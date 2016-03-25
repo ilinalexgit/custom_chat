@@ -71,6 +71,13 @@ module.exports = function (app, loginCallback) {
             });
         });
 
+        socket.on('check-connection', function (data) {
+            socket.emit('message', {
+                type: 'connection-response',
+                user: user.deserializeUser(data.id)
+            });
+        });
+
         socket.on('update-messages', function (data) {
             chat.updateMessages.call(socket, chat, data, user);
         });
