@@ -150,10 +150,14 @@ ChatClass.prototype.setMessageListener = function () {
 
         switch (response.type) {
             case 'text-message':
+                var layout;
+
+                layout = swig.run(message_tpl, response);
                 mesContainer = scope.$('.messages-container');
+
                 for (i = 0; i < mesContainer.length; i++) {
                     scope.logMessage(response);
-                    mesContainer[i].children[0].insertAdjacentHTML('beforeend', response.message);
+                    mesContainer[i].children[0].insertAdjacentHTML('beforeend', layout);
                 }
                 scope.config.onMessageReceive(response);
                 break;
@@ -346,10 +350,11 @@ ViewClass.prototype.$ = function (a) {
     }
 };
 
-ViewClass.prototype.render = function (layout) {
-    var container, scope;
+ViewClass.prototype.render = function () {
+    var container, scope, layout;
 
     container = this.$(this.selector);
+    layout = swig.run(index_tpl, {});
     this.el = container;
     scope = this;
 

@@ -113,24 +113,19 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
 };
 
 Chat.prototype.receiveMessage = function (chat, user, data) {
-    var message, time;
+    var time, message;
 
     time = new Date().getTime();
 
-    message = chat.prepareMessage({
-        system: false,
-        text: data.message,
-        username: user.deserializeUser(data.user_id).name,
-        time: time
-    });
-
-    chat.io.sockets.in(data.room).emit('message', {
+    message = {
         type: 'text-message',
-        message: message,
-        text: data.message,
-        user: user.deserializeUser(data.user_id),
-        time: time
-    });
+        time: time,
+        system: false,
+        username: user.deserializeUser(data.user_id).name,
+        says: data.message
+    };
+
+    chat.io.sockets.in(data.room).emit('message', message);
 };
 
 Chat.prototype.updateMessages = function (chat, data, user) {

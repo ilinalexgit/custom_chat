@@ -35,16 +35,6 @@ module.exports = function (app, loginCallback) {
     app.io.sockets.on('connection', function (socket) {
         rooms = chat.getActiveRooms();
         time = new Date().getTime();
-        layout = swig.renderFile(__dirname + '/themes/' + theme + '/index.html', {
-            rooms: rooms
-        });
-
-        socket.emit('message', {
-            type: 'system-data',
-            action: 'send-layout',
-            data: {layout: layout},
-            time: time
-        });
 
         socket.emit('message', {
             type: 'update-rooms',
