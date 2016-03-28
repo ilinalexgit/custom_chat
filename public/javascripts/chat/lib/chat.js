@@ -15,19 +15,16 @@ Chat.prototype.createRoom = function (data) {
         id: this.setId()
     });
 
-    message = this.prepareMessage({
-        system: true,
-        text: 'new room \'' + data.room + '\' created',
-        username: false,
-        time: time
-    });
-
-    this.io.emit('message', {
+    message = {
         type: 'update-rooms',
-        message: message,
+        time: time,
+        system: true,
+        username: false,
         rooms: this.getActiveRooms(),
-        time: time
-    });
+        says: 'new room \'' + data.room + '\' created'
+    };
+
+    this.io.emit('message', message);
 };
 
 Chat.prototype.addUserToChat = function (chat, user, data) {
@@ -35,13 +32,6 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
 
     this.join(data.room);
     time = new Date().getTime();
-
-    message = chat.prepareMessage({
-        system: true,
-        text: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room',
-        username: false,
-        time: time
-    });
 
     if (data.user && data.user !== '') {
         if(!user.deserializeUserByName(data.user)){
@@ -69,11 +59,15 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
         users: user.users
     });
 
-    chat.io.to(data.room).emit('message', {
-        type: 'system-message',
-        message: message,
-        time: time
-    });
+    message = {
+        type: 'text-message',
+        time: time,
+        system: true,
+        username: false,
+        says: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room'
+    };
+
+    chat.io.to(data.room).emit('message', message);
 };
 
 Chat.prototype.removeUserFromChat = function (chat, user, data) {
@@ -83,13 +77,6 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
 
     if(removedUser){
         time = new Date().getTime();
-        message = chat.prepareMessage({
-            system: true,
-            text: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room',
-            user: removedUser,
-            time: time
-        });
-
         this.leave(data.room, function (err) {/*console.log(err);*/});
 
         this.emit('message', {
@@ -104,11 +91,15 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
             users: user.users
         });
 
-        chat.io.emit('message', {
-            type: 'system-message',
-            message: message,
-            time: time
-        });
+        message = {
+            type: 'text-message',
+            time: time,
+            system: true,
+            username: false,
+            says: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room'
+        };
+
+        chat.io.emit('message', message);
     }
 };
 
@@ -126,27 +117,6 @@ Chat.prototype.receiveMessage = function (chat, user, data) {
     };
 
     chat.io.sockets.in(data.room).emit('message', message);
-};
-
-Chat.prototype.updateMessages = function (chat, data, user) {
-    var message, messages;
-
-    messages = '';
-
-    data.messages.forEach(function(item){
-        message = chat.prepareMessage({
-            system: false,
-            text: item.text,
-            username: item.user.name,
-            time: item.time
-        });
-        messages += message;
-    });
-
-    chat.io.sockets.in(data.room).emit('message', {
-        type: 'update-messages',
-        message: messages
-    });
 };
 
 Chat.prototype.canAccess = function () {
@@ -179,24 +149,6 @@ Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
 
     dateObj = new Date(date);
     return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
-};
-
-Chat.prototype.prepareMessage = function (config) {
-    var messageLayout, scope;
-
-    scope = this;
-
-    messageLayout = this.swig.renderFile(
-        this.path.join(__dirname, '../themes/' + scope.theme + '/includes/message.html'),
-        {
-            time: config.time,
-            system: config.system,
-            username: config.username,
-            says: config.text
-        }
-    );
-
-    return messageLayout;
 };
 
 module.exports = Chat;

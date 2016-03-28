@@ -79,7 +79,9 @@ ChatClass.prototype.includeStylesheet = function () {
 ChatClass.prototype.sendMessage = function (input, targetRoom) {
     var userId, url;
 
-    userId = input.parentNode.parentNode.classList[2].split('-')[1];
+    if (input.parentNode.parentNode.classList[2]) {
+        userId = input.parentNode.parentNode.classList[2].split('-')[1];
+    }
     url = function (text) {
         var source, urlArray, url, matchArray, regexToken;
 
@@ -87,10 +89,9 @@ ChatClass.prototype.sendMessage = function (input, targetRoom) {
         urlArray = [];
         regexToken = /(((ftp|https?):\/\/)[\-\w@:%_\+.~#?,&\/\/=]+)|((mailto:)?[_.\w-]+@([\w][\w\-]+\.)+[a-zA-Z]{2,3})/g;
 
-        while( (matchArray = regexToken.exec( source )) !== null )
-        {
+        while ((matchArray = regexToken.exec(source)) !== null) {
             var token = matchArray[0];
-            urlArray.push( token );
+            urlArray.push(token);
         }
 
         return urlArray;
@@ -98,14 +99,14 @@ ChatClass.prototype.sendMessage = function (input, targetRoom) {
 
     if (input.value && input.value !== '') {
         var found = url(input.value);
-        if(!found.length){
+        if (!found.length) {
             this.socket.emit('client-message', {
                 type: 'client-message',
                 message: input.value,
                 room: targetRoom,
                 user_id: userId
             });
-        }else{
+        } else {
             this.socket.emit('plugin-link', {
                 data: found,
                 text: input.value,
@@ -142,27 +143,29 @@ ChatClass.prototype.clearLog = function () {
     localStorage.removeItem('message-log');
 };
 
+ChatClass.prototype.renderMessage = function (data) {
+    var layout, mesContainer, i, length;
+
+    layout = swig.run(message_tpl, data);
+    mesContainer = this.$('.messages-container');
+    length = mesContainer.length;
+
+    for (i = 0; i < length; i++) {
+        this.logMessage(data);
+        mesContainer[i].children[0].insertAdjacentHTML('beforeend', layout);
+    }
+    this.config.onMessageReceive(data);
+};
+
 ChatClass.prototype.setMessageListener = function () {
     var scope = this;
 
     this.socket.on('message', function (response) {
-        var node, mesContainer, roomsSelect, textnode, view, user;
+        var node, mesContainer, roomsSelect, textnode, view, user, layout;
 
         switch (response.type) {
             case 'text-message':
-                var layout;
-
-                layout = swig.run(message_tpl, response);
-                mesContainer = scope.$('.messages-container');
-
-                for (i = 0; i < mesContainer.length; i++) {
-                    scope.logMessage(response);
-                    mesContainer[i].children[0].insertAdjacentHTML('beforeend', layout);
-                }
-                scope.config.onMessageReceive(response);
-                break;
-            case 'initial-data':
-                console.log(response);
+                scope.renderMessage(response);
                 break;
             case 'update-messages':
                 scope.views.forEach(function (item) {
@@ -172,7 +175,6 @@ ChatClass.prototype.setMessageListener = function () {
             case 'system-data':
                 switch (response.action) {
                     case 'join-room':
-                        //console.log(response);
                         localStorage.setItem('user-id', response.data.user.id);
                         user = new UserClass(response.data, scope);
                         scope.users.push(user);
@@ -183,7 +185,7 @@ ChatClass.prototype.setMessageListener = function () {
                             scope
                         );
                         scope.views.push(view);
-                        view.render(scope.layout);
+                        view.render();
                         user.setOwner(view, response.data.user.id);
                         break;
                     case 'leave-room':
@@ -205,13 +207,6 @@ ChatClass.prototype.setMessageListener = function () {
                     default:
                         break;
                 }
-
-                break;
-            case 'system-message':
-                //console.log(response);
-                mesContainer = scope.$('.messages-container');
-                mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
-                scope.config.onMessageReceive(response);
 
                 break;
             case 'update-rooms':
@@ -253,7 +248,7 @@ ChatClass.prototype.setMessageListener = function () {
                 });
                 break;
             case 'connection-response':
-                if(response.user){
+                if (response.user) {
                     scope.callJoinRoom(response.user.name, '#chat1');
                 }
                 break;
@@ -429,14 +424,13 @@ ViewClass.prototype.switchTheme = function (theme) {
 };
 
 ViewClass.prototype.updateThemeMessages = function (theme) {
-    var log;
+    var log, scope;
 
     log = JSON.parse(localStorage.getItem('message-log'));
+    scope = this;
 
-    this.rootScope.socket.emit('update-messages', {
-        messages: log,
-        theme: theme,
-        room: this.room
+    log.forEach(function (item) {
+        scope.rootScope.renderMessage(item);
     });
 };
 

@@ -68,10 +68,6 @@ module.exports = function (app, loginCallback) {
             });
         });
 
-        socket.on('update-messages', function (data) {
-            chat.updateMessages.call(socket, chat, data, user);
-        });
-
         if(plugins.length !== 0){
             plugins.forEach(function (item) {//load all plugins
                 socket.on(item.name, function(data){
