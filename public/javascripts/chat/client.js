@@ -151,10 +151,8 @@ ChatClass.prototype.renderMessage = function (data) {
     length = mesContainer.length;
 
     for (i = 0; i < length; i++) {
-        this.logMessage(data);
         mesContainer[i].children[0].insertAdjacentHTML('beforeend', layout);
     }
-    this.config.onMessageReceive(data);
 };
 
 ChatClass.prototype.setMessageListener = function () {
@@ -165,7 +163,15 @@ ChatClass.prototype.setMessageListener = function () {
 
         switch (response.type) {
             case 'text-message':
-                scope.renderMessage(response);
+                scope.logMessage(response);
+                scope.config.onMessageReceive(response);
+                if (response.restoreConnection) {
+                    scope.views.forEach(function (item) {
+                        item.updateThemeMessages();
+                    });
+                } else {
+                    scope.renderMessage(response);
+                }
                 break;
             case 'update-messages':
                 scope.views.forEach(function (item) {
@@ -200,7 +206,7 @@ ChatClass.prototype.setMessageListener = function () {
                             item.unrender();
                             item.render(response.data.layout);
                             user.setOwner(item, item.owner.id);
-                            item.updateThemeMessages(scope.theme);
+                            item.updateThemeMessages();
                         });
                         scope.includeStylesheet();
                         break;
@@ -423,7 +429,7 @@ ViewClass.prototype.switchTheme = function (theme) {
     });
 };
 
-ViewClass.prototype.updateThemeMessages = function (theme) {
+ViewClass.prototype.updateThemeMessages = function () {
     var log, scope;
 
     log = JSON.parse(localStorage.getItem('message-log'));

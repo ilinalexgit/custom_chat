@@ -28,18 +28,22 @@ Chat.prototype.createRoom = function (data) {
 };
 
 Chat.prototype.addUserToChat = function (chat, user, data) {
-    var message, time, storedUser;
+    var message, time, storedUser, says, restoreConnection;
 
     this.join(data.room);
     time = new Date().getTime();
+    restoreConnection = false;
 
     if (data.user && data.user !== '') {
-        if(!user.deserializeUserByName(data.user)){
+        if (!user.deserializeUserByName(data.user)) {
             storedUser = user.serializeUser(user.signinUser({
                 name: data.user
             }));
-        }else{
+            says = 'user \'' + data.user + '\' connected to \'' + data.room + '\' room';
+        } else {
             storedUser = user.deserializeUserByName(data.user);
+            says = 'user \'' + data.user + '\' restore connection to \'' + data.room + '\' room';
+            restoreConnection = true;
         }
     }
 
@@ -60,11 +64,12 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
     });
 
     message = {
+        restoreConnection: restoreConnection,
         type: 'text-message',
         time: time,
         system: true,
         username: false,
-        says: 'user \'' + data.user + '\' connected to \'' + data.room + '\' room'
+        says: says
     };
 
     chat.io.to(data.room).emit('message', message);
@@ -75,9 +80,11 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
 
     removedUser = user.removeUser(data.user);
 
-    if(removedUser){
+    if (removedUser) {
         time = new Date().getTime();
-        this.leave(data.room, function (err) {/*console.log(err);*/});
+        this.leave(data.room, function (err) {
+            /*console.log(err);*/
+        });
 
         this.emit('message', {
             type: 'system-data',
