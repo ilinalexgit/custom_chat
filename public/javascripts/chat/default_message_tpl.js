@@ -1,4 +1,4 @@
-var message_tpl = function (_swig,_ctx,_filters,_utils,_fn) {
+var default_message_tpl = function (_swig,_ctx,_filters,_utils,_fn) {
     var _ext = _swig.extensions,
         _output = "";
     _output += "<li class=\"msg\">\n    <span class=\"time\">(";
@@ -16,3 +16,6 @@ var message_tpl = function (_swig,_ctx,_filters,_utils,_fn) {
     return _output;
 
 };
+
+if(!tpl) var tpl = {};
+tpl.default_message_tpl = default_message_tpl;

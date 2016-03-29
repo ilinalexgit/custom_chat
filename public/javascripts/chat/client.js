@@ -146,7 +146,7 @@ ChatClass.prototype.clearLog = function () {
 ChatClass.prototype.renderMessage = function (data) {
     var layout, mesContainer, i, length;
 
-    layout = swig.run(message_tpl, data);
+    layout = swig.run(default_message_tpl, data);
     mesContainer = this.$('.messages-container');
     length = mesContainer.length;
 
@@ -197,19 +197,6 @@ ChatClass.prototype.setMessageListener = function () {
                     case 'leave-room':
                         localStorage.removeItem('user-id');
                         break;
-                    case 'send-layout':
-                        scope.layout = response.data.layout;
-                        break;
-                    case 'send-custom-layout':
-                        scope.views.forEach(function (item) {
-                            user = scope.getUserInstance(item.owner.id);
-                            item.unrender();
-                            item.render(response.data.layout);
-                            user.setOwner(item, item.owner.id);
-                            item.updateThemeMessages();
-                        });
-                        scope.includeStylesheet();
-                        break;
                     default:
                         break;
                 }
@@ -246,7 +233,7 @@ ChatClass.prototype.setMessageListener = function () {
                         '<option value="" disabled selected>no rooms available</option>';
                 }
                 break;
-            case 'update-users':
+            case 'update-users'://TODO: move code below to class method, to reuse in ViewClass.switchTheme
                 scope.$('.users-container')[0].querySelector('ul').innerHTML = '';
                 response.users.forEach(function (item) {
                     var el = '<li>' + item.name + '</li>';
@@ -353,9 +340,8 @@ ViewClass.prototype.$ = function (a) {
 
 ViewClass.prototype.render = function () {
     var container, scope, layout;
-
     container = this.$(this.selector);
-    layout = swig.run(index_tpl, {});
+    layout = swig.run(tpl[this.rootScope.theme + '_index_tpl'], {});
     this.el = container;
     scope = this;
 
@@ -367,7 +353,7 @@ ViewClass.prototype.render = function () {
 
         //this.leaveRoom();
         this.el.querySelector('.switch-theme').addEventListener('click', function () {
-            scope.switchTheme('green_theme');
+            scope.switchTheme('green');
         });
     }
 };
@@ -423,10 +409,20 @@ ViewClass.prototype.leaveRoom = function () {
 };
 
 ViewClass.prototype.switchTheme = function (theme) {
-    this.rootScope.theme = theme;
-    this.rootScope.socket.emit('get-theme', {
-        theme: theme
+    var scope;
+    var user;
+
+    scope = this.rootScope;
+    scope.theme = theme;
+
+    scope.views.forEach(function (item) {
+        user = scope.getUserInstance(item.owner.id);
+        item.unrender();
+        item.render();
+        user.setOwner(item, item.owner.id);
+        item.updateThemeMessages();
     });
+    this.rootScope.includeStylesheet();
 };
 
 ViewClass.prototype.updateThemeMessages = function () {
