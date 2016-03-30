@@ -1,0 +1,22 @@
+{
+    "core": {
+        "css": {
+            "src": []
+        },
+        "js": {
+            "src": [
+                "./public/javascripts/chat/client.js"
+            ]
+        },
+        "plugins": {
+            "src": [
+                "./public/javascripts/chat/default_index_tpl.js",
+                "./public/javascripts/chat/default_message_tpl.js",
+                "./public/javascripts/chat/green_index_tpl.js",
+                "./public/javascripts/chat/green_message_tpl.js"
+            ],
+            "dest": "./public/javascripts/chat/themes/compiled"
+        }
+
+    }
+}

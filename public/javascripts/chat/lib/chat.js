@@ -30,7 +30,9 @@ Chat.prototype.createRoom = function (data) {
 Chat.prototype.addUserToChat = function (chat, user, data) {
     var message, time, storedUser, says, restoreConnection;
 
-    this.join(data.room);
+    this.join(data.room, function(err){
+        /*console.log(err);*/
+    });
     time = new Date().getTime();
     restoreConnection = false;
 
@@ -58,11 +60,6 @@ Chat.prototype.addUserToChat = function (chat, user, data) {
         time: time
     });
 
-    chat.io.to(data.room).emit('message', {
-        type: 'update-users',
-        users: user.users
-    });
-
     message = {
         restoreConnection: restoreConnection,
         type: 'text-message',
@@ -83,7 +80,7 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
     if (removedUser) {
         time = new Date().getTime();
         this.leave(data.room, function (err) {
-            /*console.log(err);*/
+           /* console.log(err);*/
         });
 
         this.emit('message', {
@@ -91,11 +88,6 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
             action: 'leave-room',
             data: removedUser,
             time: time
-        });
-
-        chat.io.emit('message', {
-            type: 'update-users',
-            users: user.users
         });
 
         message = {
@@ -110,20 +102,22 @@ Chat.prototype.removeUserFromChat = function (chat, user, data) {
     }
 };
 
-Chat.prototype.receiveMessage = function (chat, user, data) {
+Chat.prototype.receiveMessage = function (chat, user, data, fn) {
     var time, message;
 
     time = new Date().getTime();
 
-    message = {
-        type: 'text-message',
-        time: time,
-        system: false,
-        username: user.deserializeUser(data.user_id).name,
-        says: data.message
-    };
+    if((data.user_id)){//TODO: check api to handle this case more correctly
+        message = {
+            type: 'text-message',
+            time: time,
+            system: false,
+            username: user.deserializeUser(data.user_id).name,
+            says: data.message
+        };
 
-    chat.io.sockets.in(data.room).emit('message', message);
+        chat.io.sockets.in(data.room).emit('message', message);
+    }
 };
 
 Chat.prototype.canAccess = function () {

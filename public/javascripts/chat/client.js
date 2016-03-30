@@ -143,7 +143,19 @@ ChatClass.prototype.clearLog = function () {
     localStorage.removeItem('message-log');
 };
 
-ChatClass.prototype.renderMessage = function (data) {
+ChatClass.prototype.prepareMessage = function (data, scope) {
+    scope.logMessage(data);
+    scope.config.onMessageReceive(data);
+    if (data.restoreConnection) {
+        scope.views.forEach(function (item) {
+            item.updateThemeMessages();
+        });
+    } else {
+        scope.renderMesContainer(data);
+    }
+};
+
+ChatClass.prototype.renderMesContainer = function (data) {
     var layout, mesContainer, i, length;
 
     layout = swig.run(default_message_tpl, data);
@@ -163,15 +175,7 @@ ChatClass.prototype.setMessageListener = function () {
 
         switch (response.type) {
             case 'text-message':
-                scope.logMessage(response);
-                scope.config.onMessageReceive(response);
-                if (response.restoreConnection) {
-                    scope.views.forEach(function (item) {
-                        item.updateThemeMessages();
-                    });
-                } else {
-                    scope.renderMessage(response);
-                }
+                scope.prepareMessage(response, scope);
                 break;
             case 'update-messages':
                 scope.views.forEach(function (item) {
@@ -232,13 +236,6 @@ ChatClass.prototype.setMessageListener = function () {
                     roomsSelect[0].innerHTML =
                         '<option value="" disabled selected>no rooms available</option>';
                 }
-                break;
-            case 'update-users'://TODO: move code below to class method, to reuse in ViewClass.switchTheme
-                scope.$('.users-container')[0].querySelector('ul').innerHTML = '';
-                response.users.forEach(function (item) {
-                    var el = '<li>' + item.name + '</li>';
-                    scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', el);
-                });
                 break;
             case 'connection-response':
                 if (response.user) {
@@ -349,13 +346,28 @@ ViewClass.prototype.render = function () {
         container.innerHTML = layout;
         container.className = 'chat-container';
         container.className += " room-" + this.room;
-        this.confirmMessageSend(this.room, this.config.onSendSubmit);
+        this.messageSendHandler(this.room, this.config.onSendSubmit);
+        this.updateUsers();
 
         //this.leaveRoom();
         this.el.querySelector('.switch-theme').addEventListener('click', function () {
             scope.switchTheme('green');
         });
     }
+};
+
+ViewClass.prototype.updateUsers = function(){
+    var scope;
+
+    scope = this;
+
+    this.rootScope.socket.emit('getUserList', null, function(data) {
+        scope.$('.users-container')[0].querySelector('ul').innerHTML = '';
+        data.users.forEach(function (item) {
+            var el = '<li>' + item.name + '</li>';
+            scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', el);
+        });
+    });
 };
 
 ViewClass.prototype.unrender = function () {
@@ -365,7 +377,7 @@ ViewClass.prototype.unrender = function () {
     container.innerHTML = '';
 };
 
-ViewClass.prototype.confirmMessageSend = function (room, callback) {
+ViewClass.prototype.messageSendHandler = function (room, callback) {
     var scope, currentRoom, submitButton, inputField, submitListener, inputListener;
 
     scope = this;
@@ -432,7 +444,7 @@ ViewClass.prototype.updateThemeMessages = function () {
     scope = this;
 
     log.forEach(function (item) {
-        scope.rootScope.renderMessage(item);
+        scope.rootScope.renderMesContainer(item);
     });
 };
 

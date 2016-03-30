@@ -41,10 +41,17 @@ module.exports = function (app, loginCallback) {
             rooms: rooms !== 'default' ? rooms : 'default'
         });
 
+        socket.on('getUserList', function(data, fn){
+            fn({users: user.users});
+        });
+
         socket.on('createRoom', chat.createRoom.bind(chat));
         socket.on('joinRoom', chat.addUserToChat.bind(socket, chat, user));
         socket.on('leaveRoom', chat.removeUserFromChat.bind(socket, chat, user));
         socket.on('client-message', chat.receiveMessage.bind(socket, chat, user));
+        /*socket.on('client-message', function(data, fn){
+            chat.receiveMessage(chat, user, data, fn);
+        });*/
         socket.on('check-connection', function (data) {
             socket.emit('message', {
                 type: 'connection-response',
