@@ -4,6 +4,14 @@ var Chat = function (swig, theme, io) {
     this.rooms = [];
     this.swig = swig;
     this.io = io;
+
+    this.default_events = {
+        'messageReceived': []
+    };
+
+    this.custom_events = {
+
+    };
 };
 
 Chat.prototype.createRoom = function (data) {
@@ -122,8 +130,8 @@ Chat.prototype.receiveMessage = function (chat, user, data) {
         username: user.deserializeUser(data.user_id).name,
         says: data.message
     };
-
-    chat.io.sockets.in(data.room).emit('message', message);
+    var edited_message_obj = chat.triggerEvent('messageReceived', message);
+    chat.io.sockets.in(data.room).emit('message', edited_message_obj);
 };
 
 Chat.prototype.canAccess = function () {
@@ -156,6 +164,62 @@ Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
 
     dateObj = new Date(date);
     return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
+};
+
+Chat.prototype.subscribe = function (event_name, function_name, priority) {
+    var sub_obj = {
+        'name' : function_name,
+        'priority' : priority,
+        'event_name' : event_name
+    };
+    if(this.default_events.hasOwnProperty(event_name)){
+        this.default_events[event_name].push(sub_obj);
+    }else{
+        if(this.custom_events.hasOwnProperty(event_name)){
+            this.custom_events[event_name].push(sub_obj);
+        }else{
+            this.custom_events[event_name] = [];
+            this.custom_events[event_name].push(sub_obj);
+        }
+    }
+};
+
+Chat.prototype.sortEventsByPriority = function () {
+    var sortArray = ['default_events', 'custom_events'];
+    var scope = this;
+    sortArray.forEach(function(item){
+        for (prop in scope[item]){
+            if (scope[item].hasOwnProperty(prop)){
+                scope[item][prop].sort(function(a, b){
+                    return b.priority - a.priority;
+                });
+            }
+        }
+    });
+};
+
+Chat.prototype.triggerEvent = function (event_name, data) {
+    var registered_events = [];
+    var new_data = data;
+    if(this.default_events.hasOwnProperty(event_name)){
+        registered_events = this.default_events[event_name];
+    }
+
+    registered_events.forEach(function(item, index){
+        new_data = item.name(data);
+    });
+
+    return new_data;
+};
+
+Chat.prototype.setCustomListeners = function (socket) {
+    for (prop in this.custom_events){
+        if (this.custom_events.hasOwnProperty(prop)){
+            this.custom_events[prop].forEach(function(item, index){
+                socket.on(item.event_name, item.name.bind());
+            });
+        }
+    }
 };
 
 module.exports = Chat;

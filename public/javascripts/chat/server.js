@@ -1,7 +1,7 @@
 module.exports = function (app, loginCallback) {
     var socket_io, lib, time, rooms,
         chat, user, layout, swig, theme,
-        plugins, fs, path, initPlugins;
+        plugins, fs, path, enabledPlugins;
 
     path = require('path');
     fs = require('fs');
@@ -10,6 +10,8 @@ module.exports = function (app, loginCallback) {
     lib = require("./lib");
     theme = 'default';
     plugins = [];
+    //this array we need to get from global chat config
+    enabledPlugins = ['plugin-link'];
 
     app.io = socket_io();
     app.io.use(function (socket, next) {
@@ -22,14 +24,26 @@ module.exports = function (app, loginCallback) {
     chat = new lib.Chat(swig, theme, app.io);
 
     fs.readdir(path.join(__dirname, 'plugins'), function(err, files){
-        files.forEach(function (item) {//load all plugins
-            if(item.split('-')[0] === 'plugin'){
+        //load plugins
+        var plugin_module = '';
+        files.forEach(function (item) {
+            if (enabledPlugins.indexOf(item) != -1){
                 plugins.push({
                     name: item.split('.')[0],
                     module: require(path.join(__dirname, 'plugins/' + item))
                 });
+
+                //init plugins
+                var plugin_module = require(path.join(__dirname, 'plugins/' + item));
+                if (isFunction(plugin_module)){
+                    plugin_module(chat, user);
+                }else{
+                    var plugin_obj = plugin_module();
+                    plugin_obj.init(chat, user);
+                }
             }
         });
+        chat.sortEventsByPriority();
     });
 
     app.io.sockets.on('connection', function (socket) {
@@ -68,13 +82,11 @@ module.exports = function (app, loginCallback) {
             });
         });
 
-        if(plugins.length !== 0){
-            plugins.forEach(function (item) {//load all plugins
-                socket.on(item.name, function(data){
-                    var plugin = item.module(socket, chat, user);
-                    plugin.callback(data);
-                });
-            });
-        }
+        chat.setCustomListeners(socket);
     });
+
+    function isFunction(functionToCheck) {
+        var getType = {};
+        return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+    }
 };

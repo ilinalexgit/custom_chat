@@ -33,10 +33,38 @@ String.prototype.limit = function (limit, userParams) {
     return text + options.ending;
 };
 
-module.exports = function (socket, chat, user) {
-    var Plugin = function (socket) {
-        this.socket = socket || null;
+module.exports = function (chat, user) {
+
+    var Plugin = function () {
+        this.socket = null;
+
+        chat.subscribe('messageReceived', this.test, 10);
+        chat.subscribe('messageReceived', this.test1, 2);
+        chat.subscribe('messageReceived', this.test2, 7);
+
+        chat.subscribe('myCustomEvent', this.test3, 7);
     };
+
+    Plugin.prototype.test = function (message) {
+        message.says += '1';
+        return message;
+    };
+
+    Plugin.prototype.test1 = function (message) {
+        message.says += '2';
+        return message;
+    };
+
+    Plugin.prototype.test2 = function (message) {
+        message.says += '3';
+        return message;
+    };
+
+    Plugin.prototype.test3 = function (data) {
+        console.log('TEST 3');
+        console.log(data);
+    };
+
 
     Plugin.prototype.callback = function (result) {
         var $, description, title, time, message, scope;
@@ -93,5 +121,5 @@ module.exports = function (socket, chat, user) {
         });
     };
 
-    return new Plugin(socket);
+    return new Plugin();
 };
