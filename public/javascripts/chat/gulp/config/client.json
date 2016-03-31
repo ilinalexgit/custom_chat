@@ -1,0 +1,29 @@
+{
+    "core": {
+        "css": {
+            "src": [
+                "./public/javascripts/chat/themes/**/*.css"
+            ]
+        },
+        "js": {
+            "src": [
+                "./public/javascripts/chat/client.js",
+                "./public/javascripts/chat/themes/compiled/*.js"
+            ]
+        },
+        "themes": {
+            "src": "./public/javascripts/chat/themes/",
+            "items": [
+                {
+                    "name": "default",
+                    "src": "./public/javascripts/chat/themes/default/"
+                },
+                {
+                    "name": "green",
+                    "src": "./public/javascripts/chat/themes/green/"
+                }
+            ]
+        },
+        "plugins": []
+    }
+}
