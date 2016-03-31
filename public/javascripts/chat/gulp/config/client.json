@@ -1,22 +1,29 @@
 {
     "core": {
         "css": {
-            "src": []
+            "src": [
+                "./public/javascripts/chat/themes/**/*.css"
+            ]
         },
         "js": {
             "src": [
-                "./public/javascripts/chat/client.js"
+                "./public/javascripts/chat/client.js",
+                "./public/javascripts/chat/themes/compiled/*.js"
             ]
         },
-        "plugins": {
-            "src": [
-                "./public/javascripts/chat/default_index_tpl.js",
-                "./public/javascripts/chat/default_message_tpl.js",
-                "./public/javascripts/chat/green_index_tpl.js",
-                "./public/javascripts/chat/green_message_tpl.js"
-            ],
-            "dest": "./public/javascripts/chat/themes/compiled"
-        }
-
+        "themes": {
+            "src": "./public/javascripts/chat/themes/",
+            "items": [
+                {
+                    "name": "default",
+                    "src": "./public/javascripts/chat/themes/default/"
+                },
+                {
+                    "name": "green",
+                    "src": "./public/javascripts/chat/themes/green/"
+                }
+            ]
+        },
+        "plugins": []
     }
 }

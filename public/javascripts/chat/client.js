@@ -158,7 +158,7 @@ ChatClass.prototype.prepareMessage = function (data, scope) {
 ChatClass.prototype.renderMesContainer = function (data) {
     var layout, mesContainer, i, length;
 
-    layout = swig.run(default_message_tpl, data);
+    layout = swig.run(tpl.default_message_tpl, data);
     mesContainer = this.$('.messages-container');
     length = mesContainer.length;
 

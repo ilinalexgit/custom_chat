@@ -28,7 +28,7 @@
     "gulp-csslint": "latest",
     "gulp-cssmin": "latest",
     "gulp-jshint": "latest",
-    "gulp-less": "latest",
+    "gulp-less": "^3.0.5",
     "gulp-livereload": "latest",
     "gulp-load-plugins": "latest",
     "gulp-mocha": "latest",
