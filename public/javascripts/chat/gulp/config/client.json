@@ -24,6 +24,15 @@
                 }
             ]
         },
-        "plugins": []
+        "plugins": {
+            "src": "./public/javascripts/chat/plugins/",
+            "items": [
+                {
+                    "name": "plugin-link",
+                    "src": "index.js",
+                    "tpl": "message.html"
+                }
+            ]
+        }
     }
 }

@@ -1,4 +1,4 @@
-var config = require('./public/javascripts/chat/gulp/config/client.json');
+var config;
 var fs = require('fs');
 var gulp = require('gulp');
 var concat = require('gulp-concat');
@@ -6,6 +6,8 @@ var uglify = require('gulp-uglify');
 var cssmin = require('gulp-cssmin');
 var rename = require('gulp-rename');
 var shell = require('gulp-shell');
+var gulpif = require('gulp-if');
+var minimist = require('minimist');
 
 gulp.task('templates', function () {
     var compile_cmd_part = './node_modules/.bin/swig compile ';
@@ -47,5 +49,11 @@ gulp.task('styles', function() {
         .pipe(gulp.dest('./public/javascripts/chat/build/css'));
 });
 
-gulp.task('themes', ['templates']);
-gulp.task('default', ['scripts', 'styles']);
+
+gulp.task('init-config', function() {
+    var options = minimist(process.argv.slice(2));
+    config = require('./public/javascripts/chat/gulp/config/' + options.config + '.json');
+});
+
+gulp.task('themes', ['init-config', 'templates']);
+gulp.task('default', ['init-config', 'scripts', 'styles']);
