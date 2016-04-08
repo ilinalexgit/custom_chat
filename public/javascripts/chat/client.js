@@ -1,48 +1,74 @@
-var ChatClass = function () {
-    this.users = [];
-    this.rooms = [];
-    this.views = [];
-    this.theme = '';
-    this.selector = null;
-    this.layout = '';
+var Chat = function () {
+    //this.plugins = {};
+    //this.availPlagins = [
+    //    'main'
+    //];
+    //this.theme = '';
+    //this.layout = '';
 };
 
-ChatClass.prototype.init = function (selector, config) {
-    this.theme = (config.theme) ? config.theme : 'default';
+Chat.prototype.init = function (config) {
+    //this.theme = (config.theme) ? config.theme : 'default';//TODO: move to view class
     this.config = config || null;
-    this.selector = selector;
     this.initSocket(config.socket);
-    this.checkConnection();
+    //this.checkConnection();
     this.setMessageListener();
-    this.includeStylesheet();
+    //this.initPlugins();
+
+    return this;
 };
 
-ChatClass.prototype.checkConnection = function () {
+Chat.prototype.createRoom = function (name, fn) {
+    var scope = this;
+
+    if(name){
+        this.socket.emit('createRoom', {
+            room: name
+        }, function(data){
+            /*if(data && data.room){
+                scope.rooms.push(data.room);
+            }*/
+            var room = new Room(scope, data.room.name, data.room.id);
+            room.setSocket(scope.socket);
+            fn(room, data);
+        });
+    }
+};
+
+Chat.prototype.initPlugins = function () {
+    for(var i in this.plugins) {
+        if (this.plugins.hasOwnProperty(i)) {
+            var item = this.plugins[i];
+            if(this.checkPluginAvail(i)){
+                item();
+            }
+        }
+    }
+};
+
+Chat.prototype.initSocket = function (socket) {
+    this.socket = io.connect(socket, {query: 'theme=' + this.theme});
+};
+
+Chat.prototype.checkConnection = function () {
     this.socket.emit('check-connection', {
         id: localStorage.getItem('user-id')
     });
 };
 
-ChatClass.prototype.initSocket = function (socket) {
-    this.socket = io.connect(socket, {query: 'theme=' + this.theme});
+Chat.prototype.checkPluginAvail = function (value) {
+    for(var i in this.availPlagins) {
+        if (this.availPlagins.hasOwnProperty(i)) {
+            return this.availPlagins[i] === value;
+        }
+    }
 };
 
-ChatClass.prototype.getConfig = function () {
+Chat.prototype.getConfig = function () {
     return this.config;
 };
 
-ChatClass.prototype.getUserInstance = function (id) {
-    var result = false;
-    this.users.forEach(function (item) {
-        if (item.data.user.id === id) {
-            result = item;
-        }
-    });
-
-    return result;
-};
-
-ChatClass.prototype.$ = function (a) {
+Chat.prototype.$ = function (a) {//TODO: remove from view class
     switch (a.charAt(0)) {
         case '#':
             return document.getElementById(a.substring(1));
@@ -56,33 +82,13 @@ ChatClass.prototype.$ = function (a) {
     }
 };
 
-ChatClass.prototype.includeStylesheet = function () {
-    var head, link, createdEl;
-
-    createdEl = document.querySelector('#chat-style');
-    head = document.getElementsByTagName('head')[0];
-    link = document.createElement('link');
-    link.id = 'chat-style';
-    link.rel = 'stylesheet';
-    link.type = 'text/css';
-    link.href = '/javascripts/chat/themes/' + this.theme + '/style.css';
-    link.media = 'all';
-
-    if (!createdEl) {
-        head.appendChild(link);
-    } else {
-        createdEl.parentNode.removeChild(createdEl);
-        head.appendChild(link);
-    }
-};
-
-ChatClass.prototype.sendMessage = function (input, targetRoom) {
+Chat.prototype.sendMessage = function (input, targetRoom) {
     var userId, url;
 
     if (input.parentNode.parentNode.classList[2]) {
         userId = input.parentNode.parentNode.classList[2].split('-')[1];
     }
-    url = function (text) {
+    /*url = function (text) {
         var source, urlArray, url, matchArray, regexToken;
 
         source = (text || '').toString();
@@ -95,29 +101,38 @@ ChatClass.prototype.sendMessage = function (input, targetRoom) {
         }
 
         return urlArray;
-    };
+    };*/
 
     if (input.value && input.value !== '') {
-        var found = url(input.value);
+        var textarea, i, length;
+        /*var found = url(input.value);
         if (!found.length) {
-            this.socket.emit('client-message', {
-                type: 'client-message',
-                message: input.value,
-                room: targetRoom,
-                user_id: userId
-            });
         } else {
-            this.socket.emit('plugin-link', {
+            this.socket.emit('plugin-link', {//TODO: remove this when event system get ready
                 data: found,
                 text: input.value,
                 room: targetRoom,
                 user_id: userId
             });
+        }*/
+
+        this.socket.emit('client-message', {
+            type: 'client-message',
+            message: input.value,
+            room: targetRoom,
+            user_id: userId
+        });
+
+        textarea = chat.$('.message-input');
+        length = textarea.length;
+
+        for(i = 0; i < length; i++){
+            textarea[i].value = '';
         }
     }
 };
 
-ChatClass.prototype.logMessage = function (message) {
+Chat.prototype.logMessage = function (message) {
     var log;
 
     log = JSON.parse(localStorage.getItem('message-log')) || [];
@@ -139,25 +154,29 @@ ChatClass.prototype.logMessage = function (message) {
     }
 };
 
-ChatClass.prototype.clearLog = function () {
+Chat.prototype.clearLog = function () {
     localStorage.removeItem('message-log');
 };
 
-ChatClass.prototype.prepareMessage = function (data, scope) {
-    scope.logMessage(data);
-    scope.config.onMessageReceive(data);
-    if (data.restoreConnection) {
-        scope.views.forEach(function (item) {
-            item.updateThemeMessages();
-        });
-    } else {
-        scope.renderMesContainer(data);
+Chat.prototype.prepareMessage = function (data, scope) {
+    if(data){
+        scope.logMessage(data);
+        /*if (data.restoreConnection) {
+            scope.views.forEach(function (item) {
+                item.updateThemeMessages();
+            });
+        } else {
+            scope.renderMessage(data);
+        }*/
+        scope.renderMessage(data);
     }
 };
 
-ChatClass.prototype.renderMesContainer = function (data) {
+Chat.prototype.renderMessage = function (data) {
     var layout, mesContainer, i, length;
 
+    swig.setFilter('myfilter', function (input) { return input; });
+    data.myvar = 'test';
     layout = swig.run(tpl.default_message_tpl, data);
     mesContainer = this.$('.messages-container');
     length = mesContainer.length;
@@ -167,11 +186,10 @@ ChatClass.prototype.renderMesContainer = function (data) {
     }
 };
 
-ChatClass.prototype.setMessageListener = function () {
+Chat.prototype.setMessageListener = function () {
     var scope = this;
 
     this.socket.on('message', function (response) {
-        var node, mesContainer, roomsSelect, textnode, view, user, layout;
 
         switch (response.type) {
             case 'text-message':
@@ -182,66 +200,27 @@ ChatClass.prototype.setMessageListener = function () {
                     item.redrawMessages(response);
                 });
                 break;
-            case 'system-data':
-                switch (response.action) {
-                    case 'join-room':
-                        localStorage.setItem('user-id', response.data.user.id);
-                        user = new UserClass(response.data, scope);
-                        scope.users.push(user);
-                        view = new ViewClass(
-                            response.data.room,
-                            response.data.container,
-                            scope.getConfig(),
-                            scope
-                        );
-                        scope.views.push(view);
-                        view.render();
-                        user.setOwner(view, response.data.user.id);
-                        break;
-                    case 'leave-room':
-                        localStorage.removeItem('user-id');
-                        break;
-                    default:
-                        break;
-                }
-
-                break;
-            case 'update-rooms':
-                var i = 0, length = response.rooms.length, room;
-                mesContainer = scope.$('.messages-container');
-                roomsSelect = scope.$('.created-rooms');
-
-                if (response.rooms !== 'default') {
-                    for (i = 0; i < length; i++) {
-                        room = new RoomClass(scope.socket);
-                        room.setName(response.rooms[i].name);
-                        scope.rooms.push(room);
-                    }
-
-                    scope.updateRoomsList(response.rooms);
-                    roomsSelect[0].innerHTML = '';
-                    for (i = 0; i < length; i++) {
-                        node = document.createElement("option");
-                        textnode = document.createTextNode(response.rooms[i].name);
-                        node.setAttribute("value", response.rooms[i].id);
-                        node.className = 'msg';
-                        node.appendChild(textnode);
-                        roomsSelect[0].appendChild(node);
-                    }
-
-                    if (mesContainer.length > 0 && response.message && response.message !== '') {
-                        mesContainer[0].children[0].insertAdjacentHTML('beforeend', response.message);
-                    }
-                } else {
-                    roomsSelect[0].innerHTML =
-                        '<option value="" disabled selected>no rooms available</option>';
-                }
-                break;
-            case 'connection-response':
+            /*case 'connection-response':
                 if (response.user) {
-                    scope.callJoinRoom(response.user.name, '#chat1');
+                    var user, state, currentUserID, view;
+
+                    state = scope.room.getState('room1');//point 1
+                    console.log(state);
+                    scope.room.joinRoom(state.owner.name, state.room, function(response){
+                        user = new User(response.user, scope);
+                        currentUserID = response.user.id;
+
+                        view = new View(
+                            state.room,
+                            '#chat1',
+                            scope.room
+                        );
+                        view.render();
+                        //view.setOwner(user, response.user.id);
+                        scope.prepareMessage(response.message, scope);
+                    });
                 }
-                break;
+                break;*/
             case 'server-authorize':
                 break;
             default:
@@ -251,133 +230,127 @@ ChatClass.prototype.setMessageListener = function () {
     });
 };
 
-ChatClass.prototype.updateRoomsList = function (rooms) {
-    var scope, i, length;
+var User = function (data) {
+    this.id = this.setId();
+    this.name = data.name || null;
+    this.last_name = data.last_name || null;
 
-    scope = this;
-    length = rooms.length;
-
-    for (i = 0; i < length; i++) {
-        scope.rooms[i].setId(rooms[i].id);
-    }
+    //this.users = [];
+    //this.users.push(data);
 };
 
-ChatClass.prototype.createRoomInstance = function (roomName) {
-    var room;
-    if (roomName && roomName !== '') {
-        room = new RoomClass(this.socket);
-        this.rooms.push(room);
-        room.createRoom(roomName);
-    }
+User.prototype.setId = function () {
+    return '_' + Math.random().toString(36).substr(2, 9);
 };
 
-ChatClass.prototype.callJoinRoom = function (userName, selector) {
-    var roomsSelect, currentRoom, room;
-
-    roomsSelect = this.$('.created-rooms');
-    currentRoom = roomsSelect[0].options[roomsSelect[0].selectedIndex].innerHTML;//TODO: check room name on server side (value or innerHTML where stored)
-
-    if (userName && userName !== '' && currentRoom !== '') {
-        room = new RoomClass(this.socket);//TODO: store instance of room in parent class
-        room.joinRoom(userName, currentRoom, selector);
-    }
-};
-
-
-ChatClass.prototype.callLeaveRoom = function (roomId) {
-    var room, container, userId;
-
-    localStorage.removeItem('user-id');
-    container = this.$('.room-' + roomId);
-    userId = container[0].classList[2].split('-')[1];
-    container[0].classList.remove('owner-' + userId);
-    room = new RoomClass(this.socket);//TODO: store instance of room in parent class
-    room.leaveRoom(userId, roomId);
-};
-
-var UserClass = function (data, rootScope) {
-    this.data = data || null;
-    this.rootScope = rootScope || null;
-};
-
-UserClass.prototype.setOwner = function (view, id) {//TODO: store user id in User class
-    var i, length;
-
-    length = this.rootScope.users.length;
-
-    for (i = 0; i < length; i++) {
-        if (this.rootScope.users[i].data.user.id === id) {
-            view.el.className += " owner-" + this.rootScope.users[i].data.user.id;
-            view.owner = this.data.user;
+User.prototype.getUser = function (id) {
+    var result = false;
+    this.users.forEach(function (item) {
+        if (item.id === id) {
+            result = item;
         }
-    }
+    });
+
+    return result;
 };
 
-var ViewClass = function (room, selector, chatConfig, scope) {
+var View = function (theme, selector, room) {
     this.el = null;
-    this.room = room || null;
-    this.rootScope = scope || null;
+    this.room_id = room.id || null;
+    this.rootScope = room.parentScope || null;
+    this.parentScope = room || null;
     this.selector = selector || null;
-    this.config = chatConfig || null;
+    this.theme = theme || 'default';
+
+    /*this.room = this.parentScope.getRoom(this.room_id);
+    this.parentScope.views.push(this);*/
+
+    return this;
 };
 
-ViewClass.prototype.$ = function (a) {
-    switch (a.charAt(0)) {
-        case '#':
-            return document.getElementById(a.substring(1));
-            break;
-        case '.':
-            return document.getElementsByClassName(a.substring(1));
-            break;
-        default:
-            return new Error('wrong selector');
-            break;
-    }
-};
-
-ViewClass.prototype.render = function () {
+View.prototype.render = function () {
     var container, scope, layout;
-    container = this.$(this.selector);
-    layout = swig.run(tpl[this.rootScope.theme + '_index_tpl'], {});
+    container = this.rootScope.$(this.selector);
+    layout = swig.run(tpl[this.theme + '_index_tpl'], {});
     this.el = container;
     scope = this;
 
     if (container.innerHTML === '') {
         container.innerHTML = layout;
         container.className = 'chat-container';
-        container.className += " room-" + this.room;
-        this.messageSendHandler(this.room, this.config.onSendSubmit);
+        container.className += " room-" + this.parentScope.roomName;
+        this.includeStylesheet();
+        this.messageSendHandler(this.parentScope.roomName);
         this.updateUsers();
+        this.setOwner(this.parentScope.user, false);
 
-        //this.leaveRoom();
         this.el.querySelector('.switch-theme').addEventListener('click', function () {
             scope.switchTheme('green');
         });
     }
+
+    return this;
 };
 
-ViewClass.prototype.updateUsers = function(){
+View.prototype.includeStylesheet = function () {//TODO: move to view class
+    var head, link, createdEl;
+
+    createdEl = document.querySelector('#chat-style');
+    head = document.getElementsByTagName('head')[0];
+    link = document.createElement('link');
+    link.id = 'chat-style';
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = '/javascripts/chat/vendor/themes/' + this.theme + '/style.css';
+    link.media = 'all';
+
+    if (!createdEl) {
+        head.appendChild(link);
+    } else {
+        createdEl.parentNode.removeChild(createdEl);
+        head.appendChild(link);
+    }
+};
+
+View.prototype.setOwner = function (user, id) {
+    /*var i, length;
+
+    length = user.users.length;
+
+    for (i = 0; i < length; i++) {
+        if (user.users[i].id === id) {
+            this.el.className += " owner-" + user.users[i].id;
+            this.owner = user.users[i];
+        }
+    }*/
+
+    this.el.className += " owner-" + user.id;
+    this.owner = user;
+    this.parentScope.storeState(this);
+};
+
+View.prototype.updateUsers = function(){
     var scope;
 
     scope = this;
 
     this.rootScope.socket.emit('getUserList', null, function(data) {
-        scope.$('.users-container')[0].querySelector('ul').innerHTML = '';
+        scope.rootScope.$('.users-container')[0].querySelector('ul').innerHTML = '';
         data.users.forEach(function (item) {
             var el = '<li>' + item.name + '</li>';
-            scope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', el);
+            scope.rootScope.$('.users-container')[0].querySelector('ul').insertAdjacentHTML('beforeend', el);
         });
     });
 };
 
-ViewClass.prototype.unrender = function () {
+View.prototype.unrender = function () {
     var container;
 
-    container = this.$(this.selector);
+    container = this.rootScope.$(this.selector);
     container.innerHTML = '';
 };
 
-ViewClass.prototype.messageSendHandler = function (room, callback) {
+View.prototype.messageSendHandler = function (room) {
     var scope, currentRoom, submitButton, inputField, submitListener, inputListener;
 
     scope = this;
@@ -386,10 +359,6 @@ ViewClass.prototype.messageSendHandler = function (room, callback) {
     submitListener = function () {
         currentRoom = this.parentNode.parentNode.parentNode.classList[1].split('-')[1];
         scope.rootScope.sendMessage(this.parentNode.previousElementSibling, currentRoom);
-
-        if (callback) {
-            callback();
-        }
         return false;
     };
     inputListener = function (event) {
@@ -397,10 +366,6 @@ ViewClass.prototype.messageSendHandler = function (room, callback) {
             if (event.keyCode == 13) {
                 currentRoom = this.parentNode.parentNode.classList[1].split('-')[1];
                 scope.rootScope.sendMessage(this, currentRoom);
-
-                if (callback) {
-                    callback();
-                }
             }
         } catch (e) {
             //..
@@ -416,11 +381,7 @@ ViewClass.prototype.messageSendHandler = function (room, callback) {
     }
 };
 
-ViewClass.prototype.leaveRoom = function () {
-    console.log(this.rootScope);
-};
-
-ViewClass.prototype.switchTheme = function (theme) {
+View.prototype.switchTheme = function (theme) {
     var scope;
     var user;
 
@@ -428,63 +389,128 @@ ViewClass.prototype.switchTheme = function (theme) {
     scope.theme = theme;
 
     scope.views.forEach(function (item) {
-        user = scope.getUserInstance(item.owner.id);
+        user = scope.getUser(item.owner.id);
         item.unrender();
         item.render();
-        user.setOwner(item, item.owner.id);
+        //user.setOwner(item, item.owner.id);
         item.updateThemeMessages();
     });
     this.rootScope.includeStylesheet();
 };
 
-ViewClass.prototype.updateThemeMessages = function () {
+View.prototype.updateThemeMessages = function () {
     var log, scope;
 
     log = JSON.parse(localStorage.getItem('message-log'));
     scope = this;
 
     log.forEach(function (item) {
-        scope.rootScope.renderMesContainer(item);
+        scope.rootScope.renderMessage(item);
     });
 };
 
-ViewClass.prototype.redrawMessages = function (data) {
+View.prototype.redrawMessages = function (data) {
     this.el.querySelector('.messages-container ul').innerHTML = data.message;
 };
 
-var RoomClass = function (socket) {
-    this.socket = socket || null;
-    this.roomName = null;
-};
-
-RoomClass.prototype.setId = function (id) {
+var Room = function (scope, name, id) {
+    this.parentScope = scope || null;//TODO: rename to rootScope
+    this.roomName = name || null;
     this.id = id || null;
+    this.socket = null;
+    this.rooms = [];//TODO: move to chatClass
+    this.views = [];
 };
 
-RoomClass.prototype.setName = function (name) {
+Room.prototype.updateRoomsList = function (rooms) {
+    var i, length;
+
+    length = rooms.length;
+
+    for (i = 0; i < length; i++) {
+        this.rooms.push(rooms[i]);
+    }
+};
+
+Room.prototype.setSocket = function (socket) {
+    this.socket = socket || null;
+};
+
+Room.prototype.setName = function (name) {
     this.roomName = name || null;
 };
 
-RoomClass.prototype.createRoom = function (name) {
-    this.roomName = name || null;
-    this.socket.emit('createRoom', {
+Room.prototype.joinUser = function (user, sfn, efn) {
+    var scope = this;
+    this.socket.emit('joinRoom', {
+        user: {
+            id: user.id,
+            name: user.name,
+            last_name: user.last_name
+        },
         room: this.roomName
+    }, function(response) {
+        if(response){
+            scope.user = response.user;
+            sfn(scope, response);
+        }else{
+            efn({error: true});
+        }
     });
 };
 
-RoomClass.prototype.joinRoom = function (user, room, targetView) {
+Room.prototype.getRoom = function (id) {
+    var result = false;
+    this.rooms.forEach(function (item) {
+        if (item.id === id) {
+            result = item;
+        }
+    });
+
+    return result;
+};
+
+Room.prototype.joinRoom = function (user, room, fn) {
     this.socket.emit('joinRoom', {
-        container: targetView,
         user: user,
         room: room
+    }, function(response) {
+        localStorage.setItem('user-id', response.user.id);
+        fn(response);
     });
 };
 
-RoomClass.prototype.leaveRoom = function (user, roomName) {
+Room.prototype.leaveRoom = function (fn) {
     this.socket.emit('leaveRoom', {
-        room: roomName,
-        user: user
+        room: this.roomName,
+        user: this.user.id
+    }, function(response) {
+        localStorage.removeItem('user-id');
+        fn(response);
     });
 };
 
-var chat = new ChatClass();
+Room.prototype.sendMessage = function (message, fn) {
+    var scope = this;
+    this.socket.emit('client-message', {
+        type: 'client-message',
+        user_id: scope.user.id,
+        message: message,
+        room: scope.roomName
+    }, function(response) {
+        fn(response);
+    });
+};
+
+Room.prototype.storeState = function (view) {
+    localStorage.setItem(view.parentScope.roomName, JSON.stringify({
+        owner: view.owner,
+        room: {}
+    }));
+};
+
+Room.prototype.getState = function (name) {
+    return JSON.parse(localStorage.getItem(name));
+};
+
+var chat = new Chat();

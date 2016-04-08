@@ -2,25 +2,25 @@
     "core": {
         "css": {
             "src": [
-                "./public/javascripts/chat/themes/**/*.css"
+                "./public/javascripts/chat/vendor/themes/**/*.css"
             ]
         },
         "js": {
             "src": [
                 "./public/javascripts/chat/client.js",
-                "./public/javascripts/chat/themes/compiled/*.js"
+                "./public/javascripts/chat/vendor/themes/compiled/*.js"
             ]
         },
         "themes": {
-            "src": "./public/javascripts/chat/themes/",
+            "src": "./public/javascripts/chat/vendor/themes/",
             "items": [
                 {
                     "name": "default",
-                    "src": "./public/javascripts/chat/themes/default/"
+                    "src": "./public/javascripts/chat/vendor/themes/default/"
                 },
                 {
                     "name": "green",
-                    "src": "./public/javascripts/chat/themes/green/"
+                    "src": "./public/javascripts/chat/vendor/themes/green/"
                 }
             ]
         },

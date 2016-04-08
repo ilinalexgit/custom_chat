@@ -14,7 +14,8 @@ User.prototype.signinUser = function (data) {
     if (data.name && data.name !== '') {
         return {
             name: data.name,
-            id: this.setId()
+            socket_id: data.socket.id,
+            id: data.id
         };
     }
 };
@@ -69,10 +70,6 @@ User.prototype.deserializeUserByName = function (name) {//TODO: refactor deseria
     }
 
     return false;
-};
-
-User.prototype.setId = function () {
-    return '_' + Math.random().toString(36).substr(2, 9);
 };
 
 module.exports = User;

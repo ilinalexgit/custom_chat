@@ -1,0 +1,39 @@
+<li class="msg">
+    <span class="time">({{ time|date('H:i:s') }})</span>
+    {% if additionally && additionally['before-name'].length %}
+        <div class="helpers-cont bf-name">
+            {% for item in additionally['before-name'] %}
+                {{item}}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <span class="username">{{ username|default('bot') }}:</span>
+    {% if additionally && additionally['after-name'].length %}
+        <div class="helpers-cont af-name">
+            {% for item in additionally['after-name'] %}
+                {{item}}
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% if additionally && additionally['before-message'].length %}
+        <div class="helpers-cont bf-says">
+            {% for item in additionally['before-message'] %}
+                {{item}}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <span class="says">{{ says|escape }}</span>
+    {% if additionally && additionally['after-message'].length %}
+        <div class="helpers-cont af-says">
+            {% for item in additionally['after-message'] %}
+                {{item}}
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% if !system %}
+    <span class="msg-actions">
+        <a href="#" class="edit-msg">Edit</a>&nbsp;
+        <a href="#" class="delete-msg">Delete</a>
+    </span>
+    {% endif %}
+</li>

@@ -1,4 +1,5 @@
 <li class="msg">
+    {{ myvar|myfilter }}
     <span class="time">({{ time|date('H:i:s') }})</span>
     <span class="username">{{ username|default('bot') }}:</span>
     <span class="says">{{ says|escape }}</span>

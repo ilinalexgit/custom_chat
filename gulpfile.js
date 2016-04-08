@@ -21,6 +21,7 @@ gulp.task('templates', function () {
                     gulp.src(items.src + item[i], {read: false})
                         .pipe(shell([
                             compile_cmd_part + items.src + item[i]
+                                + ' --filters ./public/javascripts/chat/vendor/themes/default/filters/index.js '
                                 + ' ' + wrap_cmd_part
                                 + ' > ' + config.core.themes.src
                                 + 'compiled/' + items.name
@@ -49,6 +50,9 @@ gulp.task('styles', function() {
         .pipe(gulp.dest('./public/javascripts/chat/build/css'));
 });
 
+gulp.task('plugins', function() {
+    console.log(plugins);
+});
 
 gulp.task('init-config', function() {
     var options = minimist(process.argv.slice(2));

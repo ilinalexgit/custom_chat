@@ -4,6 +4,12 @@ var Chat = function (swig, theme, io) {
     this.rooms = [];
     this.swig = swig;
     this.io = io;
+    /*this.additionally = {
+        'before-name': [],
+        'after-name': [],
+        'before-message': [],
+        'after-message': []
+    };*/
 
     this.default_events = {
         'messageReceived': []
@@ -14,99 +20,97 @@ var Chat = function (swig, theme, io) {
     };
 };
 
-Chat.prototype.createRoom = function (data) {
-    var message, time;
+Chat.prototype.createRoom = function (socket, chat, user, data) {
+    var response, time, room;
     time = new Date().getTime();
 
-    this.updateRoomsList('add-room', {
+    room = this.updateRoomsList('add-room', {
         name: data.room,
         id: this.setId()
     });
 
-    message = {
-        type: 'update-rooms',
+    socket.join(data.room, function(err){
+        //console.log(err);
+    });
+
+    response = {
         time: time,
         system: true,
         username: false,
         rooms: this.getActiveRooms(),
+        room: room,
         says: 'new room \'' + data.room + '\' created'
     };
 
-    this.io.emit('message', message);
+    this.io.emit('update-rooms', response);
+    return response;
 };
 
-Chat.prototype.addUserToChat = function (chat, user, data) {
+Chat.prototype.addUserToChat = function (socket, chat, user, data) {
     var message, time, storedUser, says, restoreConnection;
 
-    this.join(data.room, function(err){
-        /*console.log(err);*/
-    });
     time = new Date().getTime();
     restoreConnection = false;
+    socket.join(data.room, function(err){/*console.log(err);*/});
 
     if (data.user && data.user !== '') {
-        if (!user.deserializeUserByName(data.user)) {
+        if (!user.deserializeUserByName(data.user.name)) {
             storedUser = user.serializeUser(user.signinUser({
-                name: data.user
+                name: data.user.name,
+                id: data.user.id,
+                socket: socket
             }));
-            says = 'user \'' + data.user + '\' connected to \'' + data.room + '\' room';
+            says = 'user \'' + data.user.name + '\' connected to \'' + data.room + '\' room';
         } else {
-            storedUser = user.deserializeUserByName(data.user);
-            says = 'user \'' + data.user + '\' restore connection to \'' + data.room + '\' room';
+            storedUser = user.deserializeUserByName(data.user.name);
+            says = 'user \'' + data.user.name + '\' restore connection to \'' + data.room.name + '\' room';
             restoreConnection = true;
         }
     }
 
-    this.emit('message', {
-        type: 'system-data',
-        action: 'join-room',
-        data: {
-            container: data.container,
-            room: data.room,
-            user: storedUser
+    return {
+        /*type: 'system-data',
+        action: 'join-room',*/
+        message: {
+            restoreConnection: restoreConnection,
+            type: 'text-message',
+            time: time,
+            system: true,
+            username: false,
+            //additionally: this.addAdditionally(),
+            says: says
         },
+        room: data.room,
+        user: storedUser,
         time: time
-    });
-
-    message = {
-        restoreConnection: restoreConnection,
-        type: 'text-message',
-        time: time,
-        system: true,
-        username: false,
-        says: says
     };
-
-    chat.io.to(data.room).emit('message', message);
 };
 
-Chat.prototype.removeUserFromChat = function (chat, user, data) {
+Chat.prototype.removeUserFromChat = function (socket, chat, user, data) {
     var message, removedUser, time;
 
     removedUser = user.removeUser(data.user);
 
     if (removedUser) {
         time = new Date().getTime();
-        this.leave(data.room, function (err) {
+        socket.leave(data.room, function (err) {
            /* console.log(err);*/
         });
 
-        this.emit('message', {
+        return {
             type: 'system-data',
             action: 'leave-room',
+            message: {
+                type: 'text-message',
+                time: time,
+                system: true,
+                username: false,
+                //additionally: this.addAdditionally(),
+                says: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room'
+            },
             data: removedUser,
             time: time
-        });
-
-        message = {
-            type: 'text-message',
-            time: time,
-            system: true,
-            username: false,
-            says: 'user \'' + removedUser.name + '\' disconnected from \'' + data.room + '\' room'
         };
-
-        chat.io.emit('message', message);
     }
 };
 
@@ -121,9 +125,11 @@ Chat.prototype.receiveMessage = function (chat, user, data, fn) {
             time: time,
             system: false,
             username: user.deserializeUser(data.user_id).name,
+            //additionally: chat.addAdditionally({'before-name': 'test'}),
             says: data.message
         };
-        var edited_message_obj = chat.triggerEvent('messageReceived', message);
+
+        //var edited_message_obj = chat.triggerEvent('messageReceived', message);
         chat.io.sockets.in(data.room).emit('message', message);
     }
 };
@@ -147,17 +153,34 @@ Chat.prototype.updateRoomsList = function (action, room) {
         default:
             break;
     }
+
+    return room;
 };
 
 Chat.prototype.getActiveRooms = function () {
     return (this.rooms.length !== 0) ? this.rooms : 'default';
 };
 
-Chat.prototype.wrapDate = function (date) {//TODO: remove if no need in future
+Chat.prototype.wrapDate = function (date) {
     var dateObj;
 
     dateObj = new Date(date);
     return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
+};
+
+Chat.prototype.disconnect = function (data) {
+    data.user.users.forEach(function(item){
+        if(item.socket_id === data.socket.id){
+            console.log('user ' + item.socket_id + ' disconnected');
+        }
+    });
+};
+
+Chat.prototype.addAdditionally = function (config) {
+    if(config && 'before-name' in config){
+        this.additionally['before-name'].push(config['before-name']);
+    }
+    return this.additionally;
 };
 
 Chat.prototype.subscribe = function (event_name, function_name, priority) {
